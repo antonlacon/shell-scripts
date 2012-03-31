@@ -14,13 +14,3 @@ die() {
 		exit 1
 	fi
 }
-
-# test_for(cmd) - test for whether a command exists
-
-test_for() {
-	if command -v "${1}" > /dev/null; then
-		echo "1" #true
-	else
-		echo "0" #false
-	fi
-}
