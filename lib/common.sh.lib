@@ -1,4 +1,8 @@
-# common.lib v20120321
+# common.sh.lib v20120321
+#
+# Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
+# License: GNU GPLv3 -
+# Warranty: No warranty, express or implied.
 #
 # Stores common functions for shell scripts
 #
