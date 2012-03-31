@@ -1,0 +1,26 @@
+# common.lib v20120321
+#
+# Stores common functions for shell scripts
+#
+
+# die(msg, code) - exit with a message and exit code
+
+die() {
+	echo "$1" # echo command's death report
+	# use provided exit signal or default to 1
+	if [ -n "$2" ]; then
+		exit "$2"
+	else
+		exit 1
+	fi
+}
+
+# test_for(cmd) - test for whether a command exists
+
+test_for() {
+	if command -v "${1}" > /dev/null; then
+		echo "1" #true
+	else
+		echo "0" #false
+	fi
+}

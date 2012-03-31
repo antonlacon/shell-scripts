@@ -1,0 +1,293 @@
+# media.sh.lib v20120331
+#
+# Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
+# License: GNU GPLv3 - 
+# Warranty: No warranty, express or implied.
+#
+# Common multimedia related functions to assist in shell scripting
+#
+# Exit Codes:
+# 1: reserved for invoker
+# 2: audio related
+# 3: video related
+#
+# Functions Provided:
+# CreateAudioPipe
+# CreateVideoPipeAspectShifted
+# CreateVideoPipeStraightThrough
+# DestroyAudioPipe
+# DestroyVideoPipe
+# EncodeAudio_MP4AAC
+# EncodeAudio_OggVorbis
+# 
+
+# CreateAudioPipe(input file)
+# Opens a named pipe and fills it with the audio output of a file
+# Requirements: ffmpeg or avconv or mplayer, mkfifo, common.sh.lib
+# See also: DestroyAudioPipe
+#
+# Relies on invoker to set the following VARIABLES:
+# TEMP_DIR
+
+CreateAudioPipe() {
+	# fixme: implement QueryAudioChannels?
+	AUDIO_CHANNELS=2
+
+	# Test for existence of audiopipe already
+	if [ -e "${TEMP_DIR}"/MediaAudioPipe ]; then
+		die "Abort: Named pipe file already exists." "2"
+	fi
+
+	# Make a named pipe and fill it with transcoder's output in WAV format.
+	# Select an audio transcoder to output WAV: (ffmpeg, libav, mplayer)
+	if command -v ffmpeg > /dev/null; then
+		mkfifo "${TEMP_DIR}"/MediaAudioPipe || die "failed to create named pipe" "2"
+		ffmpeg -i "${1}" -acodec pcm_s16le -ac "${AUDIO_CHANNELS}" -f wav -y "${TEMP_DIR}"/MediaAudioPipe &>/dev/null &
+	elif command -v avconv > /dev/null; then
+		mkfifo "${TEMP_DIR}"/MediaAudioPipe || die "failed to create named pipe" "2"
+		avconv -i "${1}" -acodec pcm_s16le -ac "${AUDIO_CHANNELS}" -f wav -y "${TEMP_DIR}"/MediaAudioPipe &>/dev/null &
+	elif command -v mplayer > /dev/null; then
+		mkfifo "${TEMP_DIR}"/MediaAudioPipe || die "failed to create named pipe" "2"
+		mplayer -really-quiet -nocorrect-pts -vo null -vc null -ao pcm:waveheader:fast:file="${TEMP_DIR}"/MediaAudioPipe "${1}" &
+	else
+		die "Abort: No supported audio transcoder detected." "2"
+	fi
+
+	if [ $? -ne 0 ]; then
+		die "Abort: Failed to fill named pipe." "2"
+	fi
+}
+
+# CreateVideoPipeAspectShifted(input file)
+# Creates a named pipe that transcoded video to X standard while converting display aspect ratio to 4/3, while maintaining original video aspect ratio
+# Requirements: mplayer, mkfifo
+#
+# Relies on invoker to set the following VARIABLES:
+# ASPECT_RATIO
+# HEIGHT
+# TEMP_DIR
+# WIDTH
+
+CreateVideoPipeAspectShifted() {
+#	VIDEO_FRAMERATE="24000/1001"
+
+	# Test for existence of videopipe already
+	if [ -e "${TEMP_DIR}"/MediaVideoPipe ]; then
+		die "Abort: Named pipe file already exists." "3"
+	fi
+
+	if command -v mplayer > /dev/null; then
+	        mkfifo "${TEMP_DIR}"/MediaVideoPipe
+	        # mplayer's vf filter chain resizes to ASPECT_RATIO of player while maintaining original aspect ratio of the video
+	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$WIDTH":"$HEIGHT",scale=0:0,expand="$WIDTH":"$HEIGHT",dsize="${ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/MediaVideoPipe "${1}" &
+	else
+		die "Abort: No supported video transcoder detected." "3"
+	fi
+
+	if [ $? -ne 0 ]; then
+		die "Abort: Failed to fill named pipe." "3"
+	fi
+}
+
+# CreateVideoPipeStraightThrough(input file)
+# Creates a named pipe for transcoded video to X standard
+# Requirements: mplayer, mkfifo
+#
+# Relies on invoker to set the following VARIABLES:
+# TEMP_DIR
+
+CreateVideoPipeStraightThrough() {
+	# Test for existence of videopipe already
+	if [ -e "${TEMP_DIR}"/MediaVideoPipe ]; then
+		die "Abort: Named pipe file already exists." "3"
+	fi
+
+	if command -v mplayer > /dev/null; then
+	        mkfifo "${TEMP_DIR}"/MediaVideoPipe
+	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vo yuv4mpeg:file="${TEMP_DIR}"/MediaVideoPipe "${1}" &
+	else
+		die "Abort: No video transcoder detected." "3"
+	fi
+
+	if [ $? -ne 0 ]; then
+		die "Abort: Failed to fill named pipe." "3"
+	fi
+}
+
+# DestroyAudioPipe()
+# Deletes named pipe created by CreateAudioPipe
+# See also: CreateAudioPipe
+#
+# Relies on invoker to set the following VARIABLES:
+# TEMP_DIR
+
+DestroyAudioPipe() {
+	if [ -e "${TEMP_DIR}"/MediaAudioPipe ]; then
+		rm "${TEMP_DIR}"/MediaAudioPipe || die "Abort: Failed to destroy named pipe." "2"
+	fi
+}
+
+# DestroyVideoPipe()
+# Deletes named pipe created by CreateVideoPipeStraightThrough or CreateVideoPipeAspectLocked
+# See also: CreateVideoPipeStraightThrough and CreateVideoPipeAspectShifted
+#
+# Relies on invoker to set the following VARIABLES:
+# TEMP_DIR
+
+DestroyVideoPipe() {
+	if [ -e "${TEMP_DIR}"/MediaVideoPipe ]; then
+	        rm "${TEMP_DIR}"/MediaVideoPipe || die "Abort: Failed to destroy named pipe." "3"
+	fi
+}
+
+# EncodeAudio_Flac(input file)
+
+# EncodeAudio_MP4AAC(input file)
+# Converts input file to AAC and puts into an mp4 container.
+# Requirements: neroAacEnc or faac, common.sh.lib
+#
+# Relies on invoker to set following VARIABLES:
+# TEMP_DIR
+#
+# The following must also be set for separte quality settings for input files with only music
+# AVCONV_AAC_AUDIO_QUALITY_STANDALONE
+# FAAC_AAC_AUDIO_QUALITY_STANDALONE
+# FFMPEG_AAC_AUDIO_QUALITY_STANDALONE
+# NEROAACENC_AAC_AUDIO_QUALITY_STANDALONE
+#
+# The following must also to be set for separate quality settings for input files with video
+# AVCONV_AAC_AUDIO_QUALITY_VIDEO
+# HAS_VIDEO
+# FAAC_AAC_AUDIO_QUALITY_VIDEO
+# FFMPEG_AAC_AUDIO_QUALITY_VIDEO
+# NEROAACENC_AAC_AUDIO_QUALITY_VIDEO
+
+EncodeAudio_MP4AAC() {
+	# Test for audio encoders and set quality variable accordingly
+	# Priority Order (descending): neroAacEnc, faac, ffmpeg, avconv
+	# Build a named pipe and fill it with uncompressed WAV. Have the audio encoder read from the pipe
+
+	if command -v neroAacEnc > /dev/null; then
+		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+			local AUDIO_QUALITY="${NEROAACENC_AUDIO_QUALITY_VIDEO}"
+		else
+			local AUDIO_QUALITY="${NEROAACENC_AUDIO_QUALITY_STANDALONE}"
+		fi
+
+		CreateAudioPipe "${1}"
+		neroAacEnc -ignorelength -lc -q "${AUDIO_QUALITY}" -if "${TEMP_DIR}"/MediaAudioPipe -of "${TEMP_DIR}"/audio.mp4 || die "neroAacEnc failed" "2"
+	elif command -v faac > /dev/null; then
+		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+			local AUDIO_QUALITY="${FAAC_AUDIO_QUALITY_VIDEO}"
+		else
+			local AUDIO_QUALITY="${FAAC_AUDIO_QUALITY_STANDALONE}"
+		fi
+
+		CreateAudioPipe "${1}"
+		faac -q "${AUDIO_QUALITY}" -o "${TEMP_DIR}"/audio.mp4 "${TEMP_DIR}"/MediaAudioPipe || die "faac failed" "2"
+	elif command -v ffmpeg -o command -v avconv > /dev/null; then
+		if command -v ffmpeg; then
+			local AUDIO_ENCODER="ffmpeg"
+			if [ -n "${HAS_VIDEO} ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+				local AUDIO_QUALITY="${FFMPEG_AAC_AUDIO_QUALITY_VIDEO}"
+			else
+				local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE}"
+			fi
+		else
+			local AUDIO_ENCODER="avconv"
+			if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+				local AUDIO_QUALITY="${AVCONV_AAC_AUDIO_QUALITY_VIDEO}"
+			else
+				local AUDIO_QUALITY="${AVCONV_VORBIS_AUDIO_QUALITY_STANDALONE}"
+			fi
+		fi
+
+		"${AUDIO_ENCODER}" -codecs | grep -c "Advanced Audio Coding"
+		if [ $? -eq 0 ]; then
+			die "Abort: ""${AUDIO_ENCODER}"" does not appear to support aac encoding."
+		fi
+
+		CreateAudioPipe "${1}"
+		echo "this is a stub. sorry." || die "${AUDIO_ENCODER}"" failed" "2"
+	else
+		die "Abort: Failed to locate neroAacEnc, faac, ffmpeg or avconv in your \$PATH." "2"
+	fi
+
+	DestroyAudioPipe
+}
+
+# EncodeAudio_OggVorbis(input file)
+# Converts input file to Vorbis and puts into an ogg container.
+# Requirements: vorbis-tools or ffmpeg or avconv, common.sh.lib
+#
+# Relies on invoker to set following VARIABLES:
+# TEMP_DIR
+#
+# For audio files, the following must also be set:
+# OGGENC_VORBIS_AUDIO_QUALITY_STANDALONE
+# FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE
+# AVCONV_VORBIS_AUDIO_QUALITY_STANDALONE
+#
+# For video files, the following must also be set:
+# HAS_VIDEO
+# OGGENC_VORBIS_AUDIO_QUALITY_VIDEO
+# FFMPEG_VORBIS_AUDIO_QUALITY_VIDEO
+# AVCONV_VORBIS_AUDIO_QUALITY_VIDEO
+
+
+EncodeAudio_OggVorbis() {
+	if command -v oggenc > /dev/null; then
+		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+			local AUDIO_QUALITY="${OGGENC_VORBIS_AUDIO_QUALITY_VIDEO}"
+		else
+			local AUDIO_QUALITY="${OGGENC_VORBIS_AUDIO_QUALITY_STANDALONE}"
+		fi
+
+		CreateAudioPipe "${1}"
+		oggenc -q "${AUDIO_QUALITY}" --ignorelength "${TEMP_DIR}"/MediaAudioPipe -o "${TEMP_DIR}"/audio.ogg || die "oggenc failed" "2"
+	elif command -v ffmpeg -o command -v avconv > /dev/null; then
+		if command -v ffmpeg; then
+			if [ -n "${HAS_VIDEO} ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+			local AUDIO_ENCODER="ffmpeg"
+			if [ -n "${HAS_VIDEO} ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+				local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_VIDEO}"
+			else
+				local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE}"
+			fi
+		else
+			local AUDIO_ENCODER="avconv"
+			if [ -n "${HAS_VIDEO} ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+				local AUDIO_QUALITY="${AVCONV_VORBIS_AUDIO_QUALITY_VIDEO}"
+			else
+				local AUDIO_QUALITY="${AVCONV_VORBIS_AUDIO_QUALITY_STANDALONE}"
+			fi
+		fi
+		CreateAudioPipe "${1}"
+		#NOTE: FFmpeg's vorbis implementation is experimental - using their libvorbis hook instead.
+		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/MediaAudioPipe -acodec libvorbis -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.ogg || die "${AUDIO_ENCODER}"" failed" "2"
+	else
+		die "Abort: Failed to locate oggenc, ffmpeg or avconv in your \$PATH." "2"
+	fi
+	DestroyAudioPipe
+}
+
+# NormalizeAudio
+
+# have one giant query audio function that outputs to a /tmp file?
+# then have separate functions that grep it
+
+# QueryAudioChannels(input file)
+# Inspect input file for the number of audio channels
+# ASSUMES ONE AUDIO STREAM
+# Uses: mplayer or FFprobe or ...
+
+QueryAudioChannels() {
+	local AUDIO_CHANNELS=$( ffprobe -show_streams "${1}" | grep "channels=" | sed 's/channels\=//' )
+	return "${AUDIO_CHANNELS}"
+}
+
+# QueryAudioStreamMap(input file)
+
+# TestForAudio(input file)
+
+# TestForVideo(input file)
