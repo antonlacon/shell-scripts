@@ -247,7 +247,6 @@ EncodeAudio_OggVorbis() {
 		oggenc -q "${AUDIO_QUALITY}" --ignorelength "${TEMP_DIR}"/MediaAudioPipe -o "${TEMP_DIR}"/audio.ogg || die "oggenc failed" "2"
 	elif command -v ffmpeg -o command -v avconv > /dev/null; then
 		if command -v ffmpeg; then
-			if [ -n "${HAS_VIDEO} ] && [ "${HAS_VIDEO}" -ge 1 ]; then
 			local AUDIO_ENCODER="ffmpeg"
 			if [ -n "${HAS_VIDEO} ] && [ "${HAS_VIDEO}" -ge 1 ]; then
 				local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_VIDEO}"
@@ -256,7 +255,7 @@ EncodeAudio_OggVorbis() {
 			fi
 		else
 			local AUDIO_ENCODER="avconv"
-			if [ -n "${HAS_VIDEO} ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+			if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
 				local AUDIO_QUALITY="${AVCONV_VORBIS_AUDIO_QUALITY_VIDEO}"
 			else
 				local AUDIO_QUALITY="${AVCONV_VORBIS_AUDIO_QUALITY_STANDALONE}"
