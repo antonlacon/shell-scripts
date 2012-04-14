@@ -69,18 +69,21 @@ generate_alphanumeric_string() {
 # tmp_random_name()
 # Create a temporary filename for use by another command
 # Name wll be alphanumeric not currently in the designated directory
-# Essentially, try to mimic mktmp only create a name for a file, rather than the file
+# Essentially, try to mimic mktemp only create a name for a file, rather than the file
+#
+# NOTE: There is no guarantee this filename will remain free, making this potentially unsafe.
 #
 # requires the following to be set
 # TEMP_DIR
 # PN
 
 tmp_random_name() {
-local tmp_name=$( generate_alphanumeric_string 6 )
+local tmp_name=$( generate_alphanumeric_string 10 )
 
 while [ -e "${TEMP_DIR}/${PN}.$tmp_name" ]; do
-	tmp_name=$( generate alphanumeric_string 6 )	
+	tmp_name=$( generate alphanumeric_string 10 )	
 done
 echo "$PN.$tmp_name"
 
 }
+
