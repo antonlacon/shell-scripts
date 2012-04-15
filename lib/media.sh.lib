@@ -303,6 +303,7 @@ IncreaseAudioVolume() {
 
 	ffmpeg -i "${MEDIA_PIPE}" -acodec pcm_s16le -ac 2 -vol 512 -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}"
 
+	DestroyAudioPipe
 	AUDIO_PIPE="${LOUDER_AUDIO_PIPE}"
 }
 
