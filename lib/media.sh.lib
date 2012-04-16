@@ -292,8 +292,8 @@ EncodeAudio_OggVorbis() {
 #
 
 IncreaseAudioVolume() {
-	MEDIA_PIPE="${TEMP_DIR}"/"${AUDIO_PIPE}"
-	LOUDER_AUDIO_PIPE=$( tmp_random_name )
+	local MEDIA_PIPE="${TEMP_DIR}"/"${AUDIO_PIPE}"
+	local LOUDER_AUDIO_PIPE=$( tmp_random_name )
 
 	# Test for existence of audiopipe already
 	if [ -e "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" ]; then
