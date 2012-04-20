@@ -86,15 +86,18 @@ CreateAudioPipe() {
 
 CreateVideoPipeAspectShifted() {
 
+	VIDEO_PIPE=$( tmp_random_name )
+	echo "CreateVideoPipe audio pipe is: "${VIDEO_PIPE}
+
 	# Test for existence of videopipe already
-	if [ -e "${TEMP_DIR}"/MediaVideoPipe ]; then
+	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
 		die "Abort: Named pipe file already exists." "3"
 	fi
 
 	if command -v mplayer > /dev/null; then
-	        mkfifo "${TEMP_DIR}"/MediaVideoPipe
+	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE}
 	        # mplayer's vf filter chain resizes to ASPECT_RATIO of player while maintaining original aspect ratio of the video
-	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$WIDTH":"$HEIGHT",scale=0:0,expand="$WIDTH":"$HEIGHT",dsize="${ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/MediaVideoPipe "${1}" &
+	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$WIDTH":"$HEIGHT",scale=0:0,expand="$WIDTH":"$HEIGHT",dsize="${ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
 	else
 		die "Abort: No supported video transcoder detected." "3"
 	fi
@@ -112,14 +115,18 @@ CreateVideoPipeAspectShifted() {
 # TEMP_DIR
 
 CreateVideoPipeStraightThrough() {
+
+	VIDEO_PIPE=$( tmp_random_name )
+	echo "CreateVideoPipe audio pipe is: "${VIDEO_PIPE}
+
 	# Test for existence of videopipe already
-	if [ -e "${TEMP_DIR}"/MediaVideoPipe ]; then
+	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
 		die "Abort: Named pipe file already exists." "3"
 	fi
 
 	if command -v mplayer > /dev/null; then
-	        mkfifo "${TEMP_DIR}"/MediaVideoPipe
-	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vo yuv4mpeg:file="${TEMP_DIR}"/MediaVideoPipe "${1}" &
+	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE}
+	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
 	else
 		die "Abort: No video transcoder detected." "3"
 	fi
@@ -150,8 +157,8 @@ DestroyAudioPipe() {
 # TEMP_DIR
 
 DestroyVideoPipe() {
-	if [ -e "${TEMP_DIR}"/MediaVideoPipe ]; then
-	        rm "${TEMP_DIR}"/MediaVideoPipe || die "Abort: Failed to destroy named pipe." "3"
+	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
+	        rm "${TEMP_DIR}"/${VIDEO_PIPE} || die "Abort: Failed to destroy named pipe." "3"
 	fi
 }
 
