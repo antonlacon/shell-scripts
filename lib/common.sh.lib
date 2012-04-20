@@ -22,7 +22,6 @@
 # die
 # generate_alphanumeric
 # generate_alphanumeric_string
-# tmp_clean
 # tmp_random_name
 
 # die(msg, code) - exit with a message and exit code
@@ -71,13 +70,6 @@ generate_alphanumeric_string() {
 	echo $tmp_string
 }
 
-# tmp_clean()
-# used to periodically clean /tmp of a running system
-# checks to see if file is in use by a program, and if it's older than X minutes/hrs/days.
-#
-# look at tmpwatch and/or fuser and ls (atime) to find correct solution
-#
-
 # tmp_random_name()
 # Create a temporary filename for use by another command
 # Name wll be alphanumeric not currently in the designated directory
@@ -85,7 +77,7 @@ generate_alphanumeric_string() {
 #
 # NOTE: There is no guarantee this filename will remain free, making this potentially unsafe.
 #
-# requires the following to be set
+# requires the following to be set prior to calling
 # TEMP_DIR
 # PN
 
