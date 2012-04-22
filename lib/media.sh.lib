@@ -181,7 +181,7 @@ EncodeAudio_FlacFlac() {
 		fi
 
 		FLAC_SUPPORT=$( "${AUDIO_ENCODER}" -codecs | grep -c "FLAC (Free Lossless Audio Codec)" )
-		if [ FLAC_SUPPORT -eq 0 ]; then
+		if [ $FLAC_SUPPORT -eq 0 ]; then
 			die "Abort: ""${AUDIO_ENCODER}"" does not appear to support flac."
 		fi
 
@@ -255,8 +255,8 @@ EncodeAudio_MP4AAC() {
 			fi
 		fi
 
-		"${AUDIO_ENCODER}" -codecs | grep -c "Advanced Audio Coding"
-		if [ $? -eq 0 ]; then
+		AAC_SUPPORT=$( "${AUDIO_ENCODER}" -codecs | grep -c "Advanced Audio Coding" )
+		if [ $AAC_SUPPORT -eq 0 ]; then
 			die "Abort: ""${AUDIO_ENCODER}"" does not appear to support aac encoding."
 		fi
 
