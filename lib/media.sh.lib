@@ -1,4 +1,4 @@
-# media.sh.lib v20120420
+# media.sh.lib v20120422
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -164,11 +164,36 @@ DestroyVideoPipe() {
 
 # EncodeAudio_FlacFlac(input file)
 # Convert input file to Flac in the native Flac container
-# Requirements:
+# Flac has no quality settings, only compressoin levels. Always use the best.
+# Requirements: ffmpeg or avconv or flac
 #
 # Relies on invoker to set following VARIABLES:
 # TEMP_DIR
-#
+
+EncodeAudio_FlacFlac() {
+	
+	# reference flac encoder needs coaxing to work with named pipes, and is picky about input formats - make it last.
+	if command -v ffmpeg -o command -v avconv > /dev/null; then
+		if command -v ffmpeg; then
+			local AUDIO_ENCODER="ffmpeg"
+		else
+			local AUDIO_ENCODER="avconv"
+		fi
+
+		FLAC_SUPPORT=$( "${AUDIO_ENCODER}" -codecs | grep -c "FLAC (Free Lossless Audio Codec)" )
+		if [ FLAC_SUPPORT -eq 0 ]; then
+			die "Abort: ""${AUDIO_ENCODER}"" does not appear to support flac."
+		fi
+
+		CreateAudioPipe "${1}"
+		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec flac "${TEMP_DIR}"/audio.flac || die "${AUDIO_ENCODER}"" failed" "2"
+		DestroyAudioPipe	
+	elif command -v flac > /dev/null; then
+# uncomment if time is found to make this work with named pipes
+#		flac --best "${TEMP_DIR}"/"${AUDIO_PIPE}" -o "${TEMP_DIR}"/audio.flac || die "Abort: flac failed." "2"
+		flac --best "${INPUT}" -o "${TEMP_DIR}"/audio.flac || die "Abort: flac failed." "2"
+	fi
+}
 
 # EncodeAudio_MP4AAC(input file)
 # Converts input file to AAC and puts into an mp4 container.
