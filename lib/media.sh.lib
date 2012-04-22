@@ -186,7 +186,7 @@ EncodeAudio_FlacFlac() {
 		fi
 
 		CreateAudioPipe "${1}"
-		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec flac "${TEMP_DIR}"/audio.flac || die "${AUDIO_ENCODER}"" failed" "2"
+		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec flac -compression_level 8 "${TEMP_DIR}"/audio.flac || die "${AUDIO_ENCODER}"" failed" "2"
 		DestroyAudioPipe	
 	elif command -v flac > /dev/null; then
 # uncomment if time is found to make this work with named pipes
