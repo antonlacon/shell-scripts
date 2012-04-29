@@ -1,4 +1,4 @@
-# media.sh.lib v20120422
+# media.sh.lib v20120429
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -255,13 +255,14 @@ EncodeAudio_MP4AAC() {
 			fi
 		fi
 
-		AAC_SUPPORT=$( "${AUDIO_ENCODER}" -codecs | grep -c "Advanced Audio Coding" )
+		AAC_SUPPORT=$( "${AUDIO_ENCODER}" -codecs | grep -c "libfaac AAC \(Advanced Audio Codec\)" )
 		if [ $AAC_SUPPORT -eq 0 ]; then
 			die "Abort: ""${AUDIO_ENCODER}"" does not appear to support aac encoding."
 		fi
 
 		CreateAudioPipe "${1}"
-		echo "this is a stub. sorry." || die "${AUDIO_ENCODER}"" failed" "2"
+		# Uses libfaac as FFmpeg's aac encoder is experimental
+		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec aac -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.mp4 || die "${AUDIO_ENCODER}"" failed" "2"
 	else
 		die "Abort: Failed to locate neroAacEnc, faac, ffmpeg or avconv in your \$PATH." "2"
 	fi
@@ -333,7 +334,6 @@ EncodeAudio_OggVorbis() {
 # Requires:
 # TEMP_DIR
 # INPUT
-#
 
 IncreaseAudioVolume() {
 	local MEDIA_PIPE="${TEMP_DIR}"/"${AUDIO_PIPE}"
