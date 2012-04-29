@@ -1,4 +1,4 @@
-# common.sh.lib v20120420
+# common.sh.lib v20120429
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -40,17 +40,16 @@ die() {
 # output a single alphanumeric character
 
 generate_alphanumeric() {
-# [a-zA-Z0-9]
-local character_array=(a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 0 1 2 3 4 5 6 7 8 9)
+	# [a-zA-Z0-9]
+	local character_array=(a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 0 1 2 3 4 5 6 7 8 9)
 
-# choose a random number between 0 and 61 (26 lowercase, 26 uppercase, 10 digits)
-local i=$RANDOM
+	# choose a random number between 0 and 61 (26 lowercase, 26 uppercase, 10 digits)
+	local i=$RANDOM
 
-while [ $i -gt 61 ]; do
-	i=$RANDOM
-done
-
-echo ${character_array[$i]}
+	while [ $i -gt 61 ]; do
+		i=$RANDOM
+	done
+	echo ${character_array[$i]}
 }
 
 # generate_alphanumeric_string(int)
@@ -82,12 +81,11 @@ generate_alphanumeric_string() {
 # PN
 
 tmp_random_name() {
-local tmp_name=$( generate_alphanumeric_string 10 )
+	local tmp_name=$( generate_alphanumeric_string 10 )
 
-while [ -e "${TEMP_DIR}/${PN}.$tmp_name" ]; do
-	tmp_name=$( generate alphanumeric_string 10 )	
-done
-echo "$PN.$tmp_name"
-
+	while [ -e "${TEMP_DIR}/${PN}.$tmp_name" ]; do
+		tmp_name=$( generate alphanumeric_string 10 )	
+	done
+	echo "$PN.$tmp_name"
 }
 
