@@ -28,8 +28,7 @@
 # CreateAudioPipe
 # CreateVideoPipeAspectShifted
 # CreateVideoPipeStraightThrough
-# DestroyAudioPipe
-# DestroyVideoPipe
+# DestroyPipe
 # EncodeAudio_FlacFlac
 # EncodeAudio_MP4AAC
 # EncodeAudio_OggVorbis
@@ -39,7 +38,7 @@
 # CreateAudioPipe(input file)
 # Opens a named pipe and fills it with the audio output of a file
 # Requirements: ffmpeg or avconv or mplayer, mkfifo, common.sh.lib
-# See also: DestroyAudioPipe
+# See also: DestroyPipe
 #
 # Relies on invoker to set the following VARIABLES:
 # TEMP_DIR
@@ -142,17 +141,6 @@ CreateVideoPipeStraightThrough() {
 # DetectVideoCrop
 # Sample 5% of video frames to estimate crop settings. Utilizes 99% confidence interval of final result.
 
-# DestroyAudioPipe()
-# Deletes named pipe created by CreateAudioPipe
-# See also: CreateAudioPipe
-#
-# Relies on invoker to set the following VARIABLES:
-# TEMP_DIR
-
-DestroyAudioPipe() {
-	DestroyPipe audio
-}
-
 # DestroyPipe(argument) 
 # Delete named pipes created by CreateAudipPipe or CreateVideoPipe*
 #
@@ -169,17 +157,6 @@ DestroyPipe() {
 	if [ -e "${TEMP_DIR}"/"${NAMED_PIPE}" ]; then
 		rm "${TEMP_DIR}"/"${NAMED_PIPE}" || die "Abort: Failed to destroy named pipe." "4"
 	fi
-}
-
-# DestroyVideoPipe()
-# Deletes named pipe created by CreateVideoPipeStraightThrough or CreateVideoPipeAspectLocked
-# See also: CreateVideoPipeStraightThrough and CreateVideoPipeAspectShifted
-#
-# Relies on invoker to set the following VARIABLES:
-# TEMP_DIR
-
-DestroyVideoPipe() {
-	DestroyPipe video
 }
 
 # EncodeAudio_FlacFlac(input file)
@@ -207,7 +184,7 @@ EncodeAudio_FlacFlac() {
 
 		CreateAudioPipe "${1}"
 		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec flac -compression_level 8 "${TEMP_DIR}"/audio.flac || die "${AUDIO_ENCODER}"" failed" "2"
-		DestroyAudioPipe	
+		DestroyPipe audio	
 	elif command -v flac > /dev/null; then
 # uncomment if time is found to make this work with named pipes
 #		flac --best "${TEMP_DIR}"/"${AUDIO_PIPE}" -o "${TEMP_DIR}"/audio.flac || die "Abort: flac failed." "2"
@@ -287,7 +264,7 @@ EncodeAudio_MP4AAC() {
 		die "Abort: Failed to locate neroAacEnc, faac, ffmpeg or avconv in your \$PATH." "2"
 	fi
 
-	DestroyAudioPipe
+	DestroyPipe audio
 }
 
 # EncodeAudio_OggVorbis(input file)
@@ -341,7 +318,7 @@ EncodeAudio_OggVorbis() {
 	else
 		die "Abort: Failed to locate oggenc, ffmpeg or avconv in your \$PATH." "2"
 	fi
-	DestroyAudioPipe
+	DestroyPipe audio
 }
 
 # IncreaseAudioVolume (integer amount, input file, output file)
@@ -368,7 +345,7 @@ IncreaseAudioVolume() {
 
 	ffmpeg -i "${MEDIA_PIPE}" -acodec pcm_s16le -ac 2 -vol 512 -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed while increasing volume" "2"
 
-	DestroyAudioPipe
+	DestroyPipe audio
 	AUDIO_PIPE="${LOUDER_AUDIO_PIPE}"
 	echo "IncreaseAudioVolume Pipe is: "$AUDIO_PIPE
 }
