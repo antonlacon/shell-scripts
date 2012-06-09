@@ -285,7 +285,6 @@ EncodeAudio_MP4AAC() {
 # FFMPEG_VORBIS_AUDIO_QUALITY_VIDEO
 # AVCONV_VORBIS_AUDIO_QUALITY_VIDEO
 
-
 EncodeAudio_OggVorbis() {
 	if command -v oggenc > /dev/null; then
 		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
@@ -350,10 +349,34 @@ IncreaseAudioVolume() {
 	echo "IncreaseAudioVolume Pipe is: "$AUDIO_PIPE
 }
 
-# NormalizeAudio
+# GatherMediaInfo
+# Store the output of a media query tool (midentify, ffprobe, etc) and set the tool to use for querying.
 
-# have one giant query audio function that outputs to a /tmp file?
-# then have separate functions that grep it
+# need to add the avconv tools
+
+GatherMediaInfo() {
+	if command -v ffprobe; then
+		QUERY_MEDIA_TOOL=ffprobe
+		MEDIA_INFO=$( ffprobe -show_streams "${INPUT}" )
+	elif command -v midentify; then
+		QUERY_MEDIA_TOOL=midentify
+		MEDIA_INFO=$( midentify "${INPUT}" )
+	elif command -v mplayer; then
+		QUERY_MEDIA_TOOL=midentify
+	# Adapted from midentify.sh by Tobias Diedrich <ranma+mplayer@tdiedrich.de>. License: GNU GPL
+		MEDIA_INFO=$( mplayer -noconfig all -cache-min 0 -vo null -ao null -frames 0 -identify "${INPUT}" 2>/dev/null | sed -ne '/^ID_/ {
+                         s/[]()|&;<>`'"'"'\\!$" []/\\&/g;p
+                        }')
+	# End adaptation of midentify.sh
+	elif command -v ffmpeg; then
+		QUERY_MEDIA_TOOL=ffmpeg
+		MEDIA_INFO=$( ffmpeg -i "${INPUT}" 2>&1 )
+	else
+		die "Abort: No known program found to find media stream information." "4"
+	fi
+}
+
+# NormalizeAudio
 
 # QueryAudioChannels(input file)
 # Inspect input file for the number of audio channels
@@ -362,30 +385,66 @@ IncreaseAudioVolume() {
 
 QueryAudioChannels() {
 	local AUDIO_CHANNELS=$( ffprobe -show_streams "${1}" | grep "channels=" | sed 's/channels\=//' )
-	return "${AUDIO_CHANNELS}"
+	echo "${AUDIO_CHANNELS}"
 }
 
 # QueryAudioStreamMap(input file)
 
+# QueryVideoHeight
+# Query a video file to determine its display height
+#
+# MUST RUN: GatherMediaInfo
+
+QueryVideoHeight() {
+	if command -v ffprobe; then
+		local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep height | cut -d '=' -f 2 )
+	elif command -v midentify; then
+		local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_HEIGHT | cut -d '=' -f 2)
+	elif command -v ffmpeg; then
+		local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 2 )
+	else
+		die "Abort: Failed finding video height." "3"
+	fi
+
+	echo "${VIDEO_HEIGHT}"
+}
+
+# QueryVideoWidth
+# Query a video file to determine its display width
+#
+# MUST RUN: GatherMediaInfo
+
+QueryVideoWidth() {
+	if command -v ffprobe; then
+		local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep width | cut -d '=' -f 2 )
+	elif command -v midentify; then
+		local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_WIDTH | cut -d '=' -f 2)
+	elif command -v ffmpeg; then
+		local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 1 )
+	else
+		die "Abort: Failed finding video width." "3"
+	fi
+
+	echo "${VIDEO_WIDTH}"
+}
+# QueryVideoAspectRatio
+# Query a video file to determine its display aspect ratio
+
 # TestForAudio(input file)
 # Check a file for the presence of an audio track
 # Uses: ffprobe or midentify or mplayer or ffmpeg
+#
+# MUST RUN: GatherMediaInfo
 
 # Needs avconv programs
 
 TestForAudio() {
 	if command -v ffprobe; then
-		local AUDIO_TEST=$( ffprobe -show_streams "${INPUT}" | grep -c codec_type=audio )
+		local AUDIO_TEST=$( echo "${MEDIA_INFO}" | grep -c codec_type=audio )
 	elif command -v midentify; then
-		local AUDIO_TEST=$( midentify "${INPUT}" | grep -c ID_AUDIO )
-	elif command -v mplayer; then
-	# Adapted from midentify.sh by Tobias Diedrich <ranma+mplayer@tdiedrich.de>. License: GNU GPL
-		local AUDIO_TEST=$( mplayer -noconfig all -cache-min 0 -vo null -ao null -frames 0 -identify "${INPUT}" 2>/dev/null | sed -ne '/^ID_/ {
-                         s/[]()|&;<>`'"'"'\\!$" []/\\&/g;p
-                        }' | grep -c ID_AUDIO )
-	# End adaptation of midentify.sh
+		local AUDIO_TEST=$( echo "${MEDIA_INFO}" | grep -c ID_AUDIO )
 	elif command -v ffmpeg; then
-		local AUDIO_TEST=$( ffmpeg -i "${INPUT}" 2>&1 | grep -c Audio )
+		local AUDIO_TEST=$( echo "${MEDIA_INFO}" | grep -c Audio )
 	else
 		die "Abort: No known program found to detect audio streams." "2"
 	fi
