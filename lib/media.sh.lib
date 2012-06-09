@@ -22,6 +22,7 @@
 # 1: reserved for invoker
 # 2: audio related
 # 3: video related
+# 4: general failure
 #
 # Functions Provided:
 # CreateAudioPipe
@@ -151,6 +152,24 @@ CreateVideoPipeStraightThrough() {
 DestroyAudioPipe() {
 	if [ -e "${TEMP_DIR}"/"${AUDIO_PIPE}" ]; then
 		rm "${TEMP_DIR}"/"${AUDIO_PIPE}" || die "Abort: Failed to destroy named pipe." "2"
+	fi
+}
+
+# DestroyPipe(argument) 
+# Delete named pipes created by CreateAudipPipe or CreateVideoPipe*
+#
+# Relies on invoker to set the following VARIABLES:
+# TEMP_DIR
+
+DestroyPipe() {
+	if [ "${1}" -eq audio ]; then
+		local NAMED_PIPE="${AUDIO_PIPE}"
+	elif [ "${1}" -eq video ]; then
+		local NAMED_PIPE="${VIDEO_PIPE}"
+	fi
+
+	if [ -e "${TEMP_DIR}"/"${NAMED_PIPE}" ]; then
+		rm "${TEMP_DIR}"/"${NAMED_PIPE}" || die "Abort: Failed to destroy named pipe." "4"
 	fi
 }
 
