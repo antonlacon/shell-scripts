@@ -150,9 +150,7 @@ CreateVideoPipeStraightThrough() {
 # TEMP_DIR
 
 DestroyAudioPipe() {
-	if [ -e "${TEMP_DIR}"/"${AUDIO_PIPE}" ]; then
-		rm "${TEMP_DIR}"/"${AUDIO_PIPE}" || die "Abort: Failed to destroy named pipe." "2"
-	fi
+	DestroyPipe audio
 }
 
 # DestroyPipe(argument) 
@@ -181,9 +179,7 @@ DestroyPipe() {
 # TEMP_DIR
 
 DestroyVideoPipe() {
-	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
-	        rm "${TEMP_DIR}"/${VIDEO_PIPE} || die "Abort: Failed to destroy named pipe." "3"
-	fi
+	DestroyPipe video
 }
 
 # EncodeAudio_FlacFlac(input file)
