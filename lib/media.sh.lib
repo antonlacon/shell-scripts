@@ -1,4 +1,4 @@
-# media.sh.lib v20120513
+# media.sh.lib v20120609
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -92,10 +92,11 @@ CreateVideoPipeAspectShifted() {
 	# Test for existence of videopipe already
 	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
 		die "Abort: Named pipe file already exists." "3"
+	else
+	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE} || die "failed to create named pipe" "3"
 	fi
 
 	if command -v mplayer > /dev/null; then
-	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE}
 	        # mplayer's vf filter chain resizes to ASPECT_RATIO of player while maintaining original aspect ratio of the video
 	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$WIDTH":"$HEIGHT",scale=0:0,expand="$WIDTH":"$HEIGHT",dsize="${ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
 	else
@@ -122,10 +123,11 @@ CreateVideoPipeStraightThrough() {
 	# Test for existence of videopipe already
 	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
 		die "Abort: Named pipe file already exists." "3"
+	else
+	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE} || die "failed to create named pipe" "3"
 	fi
 
 	if command -v mplayer > /dev/null; then
-	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE}
 	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
 	else
 		die "Abort: No video transcoder detected." "3"
