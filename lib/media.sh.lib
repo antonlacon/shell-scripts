@@ -1,4 +1,4 @@
-# media.sh.lib v20120429
+# media.sh.lib v20120513
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -135,6 +135,9 @@ CreateVideoPipeStraightThrough() {
 		die "Abort: Failed to fill named pipe." "3"
 	fi
 }
+
+# DetectVideoCrop
+# Sample 5% of video frames to estimate crop settings. Utilizes 99% confidence interval of final result.
 
 # DestroyAudioPipe()
 # Deletes named pipe created by CreateAudioPipe
@@ -371,5 +374,29 @@ QueryAudioChannels() {
 # QueryAudioStreamMap(input file)
 
 # TestForAudio(input file)
+# Check a file for the presence of an audio track
+# Uses: ffprobe or midentify or mplayer or ffmpeg
+
+# Needs avconv programs
+
+TestForAudio() {
+	if command -v ffprobe; then
+		local AUDIO_TEST=$( ffprobe -show_streams "${INPUT}" | grep -c codec_type=audio )
+	elif command -v midentify; then
+		local AUDIO_TEST=$( midentify "${INPUT}" | grep -c ID_AUDIO )
+	elif command -v mplayer; then
+	# Adapted from midentify.sh by Tobias Diedrich <ranma+mplayer@tdiedrich.de>. License: GNU GPL
+		local AUDIO_TEST=$( mplayer -noconfig all -cache-min 0 -vo null -ao null -frames 0 -identify "${INPUT}" 2>/dev/null | sed -ne '/^ID_/ {
+                         s/[]()|&;<>`'"'"'\\!$" []/\\&/g;p
+                        }' | grep -c ID_AUDIO )
+	# End adaptation of midentify.sh
+	elif command -v ffmpeg; then
+		local AUDIO_TEST=$( ffmpeg -i "${INPUT}" 2>&1 | grep -c Audio )
+	else
+		die "Abort: No known program found to detect audio streams." "2"
+	fi
+
+	echo "${AUDIO_TEST}"
+}
 
 # TestForVideo(input file)
