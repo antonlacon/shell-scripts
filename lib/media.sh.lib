@@ -91,7 +91,7 @@ CreateAudioPipe() {
 CreateVideoPipeAspectShifted() {
 
 	VIDEO_PIPE=$( tmp_random_name )
-	echo "CreateVideoPipe audio pipe is: "${VIDEO_PIPE}
+	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
 
 	# Test for existence of videopipe already
 	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
@@ -101,8 +101,8 @@ CreateVideoPipeAspectShifted() {
 	fi
 
 	if command -v mplayer > /dev/null; then
-	        # mplayer's vf filter chain resizes to ASPECT_RATIO of player while maintaining original aspect ratio of the video
-	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$WIDTH":"$HEIGHT",scale=0:0,expand="$WIDTH":"$HEIGHT",dsize="${ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	        # mplayer's vf filter chain resizes to DEVICE_ASPECT_RATIO of player while maintaining original aspect ratio of the video
+	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$DEVICE_WIDTH":"$DEVICE_HEIGHT",scale=0:0,expand="$DEVICE_WIDTH":"$DEVICE_HEIGHT",dsize="${DEVICE_ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
 	else
 		die "Abort: No supported video transcoder detected." "3"
 	fi
