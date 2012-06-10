@@ -83,13 +83,12 @@ CreateAudioPipe() {
 # Requirements: mplayer, mkfifo
 #
 # Relies on invoker to set the following VARIABLES:
-# ASPECT_RATIO
-# HEIGHT
+# DEVICE_ASPECT_RATIO
+# DEVICE_HEIGHT
 # TEMP_DIR
-# WIDTH
+# DEVICE_WIDTH
 
 CreateVideoPipeAspectShifted() {
-
 	VIDEO_PIPE=$( tmp_random_name )
 	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
 
@@ -120,7 +119,6 @@ CreateVideoPipeAspectShifted() {
 # TEMP_DIR
 
 CreateVideoPipeStraightThrough() {
-
 	VIDEO_PIPE=$( tmp_random_name )
 	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
 
@@ -178,7 +176,6 @@ DestroyPipe() {
 # TEMP_DIR
 
 EncodeAudio_FlacFlac() {
-	
 	# reference flac encoder needs coaxing to work with named pipes, and is picky about input formats - make it last.
 	if command -v ffmpeg -o command -v avconv > /dev/null; then
 		if command -v ffmpeg; then
