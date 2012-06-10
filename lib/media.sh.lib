@@ -152,11 +152,17 @@ CreateVideoPipeStraightThrough() {
 # TEMP_DIR
 
 DestroyPipe() {
-	if [ "${1}" -eq audio ]; then
+	case "${1}" in
+	audio)
 		local NAMED_PIPE="${AUDIO_PIPE}"
-	elif [ "${1}" -eq video ]; then
+		;;
+	vidoe)
 		local NAMED_PIPE="${VIDEO_PIPE}"
-	fi
+		;;
+	*)
+		die "Abort: Unknown usgae of DestroyPipe" "4"
+		;;
+	esac
 
 	if [ -e "${TEMP_DIR}"/"${NAMED_PIPE}" ]; then
 		rm "${TEMP_DIR}"/"${NAMED_PIPE}" || die "Abort: Failed to destroy named pipe." "4"
