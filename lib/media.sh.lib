@@ -156,7 +156,7 @@ DestroyPipe() {
 	audio)
 		local NAMED_PIPE="${AUDIO_PIPE}"
 		;;
-	vidoe)
+	video)
 		local NAMED_PIPE="${VIDEO_PIPE}"
 		;;
 	*)
