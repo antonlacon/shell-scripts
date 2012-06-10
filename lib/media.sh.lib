@@ -19,7 +19,7 @@
 # Common multimedia related functions to assist in shell scripting
 #
 # Exit Codes:
-# 1: reserved for invoker
+# 1: reserved for caller
 # 2: audio related
 # 3: video related
 # 4: general failure
@@ -52,7 +52,7 @@ CreateAudioPipe() {
 	AUDIO_CHANNELS=2
 
 	AUDIO_PIPE=$( tmp_random_name )
-	echo "CreateAudioPipe audio pipe is: "$AUDIO_PIPE
+	echo "CreateAudioPipe named pipe is: "$AUDIO_PIPE
 
 	# Test for existence of audiopipe already
 	if [ -e "${TEMP_DIR}"/"${AUDIO_PIPE}" ]; then
@@ -122,7 +122,7 @@ CreateVideoPipeAspectShifted() {
 CreateVideoPipeStraightThrough() {
 
 	VIDEO_PIPE=$( tmp_random_name )
-	echo "CreateVideoPipe audio pipe is: "${VIDEO_PIPE}
+	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
 
 	# Test for existence of videopipe already
 	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
