@@ -1,4 +1,4 @@
-# media.sh.lib v20120609
+# media.sh.lib v20120610
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -34,6 +34,7 @@
 # EncodeAudio_OggVorbis
 # GatherMediaInfo
 # IncreaseAudioVolume
+# QueryVideoAspectRatio
 # QueryVideoHeight
 # QueryVideoWidth
 # TestForAudio
@@ -397,6 +398,30 @@ QueryAudioChannels() {
 
 # QueryAudioStreamMap(input file)
 
+# QueryVideoAspectRatio
+# Query a video file to determine its display aspect ratio
+#
+# MUST RUN: GatherMediaInfo
+
+QueryVideoAspectRatio() {
+	case "${QUERY_MEDIA_TOOL}" in
+		ffprobe)
+			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep display_aspect_ratio | cut -d '=' -f 2 )
+			;;
+		midentify)
+			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_ASPECT | cut -d '=' -f 2 )
+			;;
+		ffmpeg)
+			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | sed -e 's/\ /-/g' -e 's/.$//' | cut -d '-' -f 6 | tr '\:' / )
+			echo "Stubbed."
+			;;
+		*)
+			die "Abort: Failed finding aspect ratio." "3"
+			;;
+		esac
+		echo "${VIDEO_ASPECT_RATIO}"
+}
+
 # QueryVideoHeight
 # Query a video file to determine its display height
 #
@@ -408,7 +433,7 @@ QueryVideoHeight() {
 			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep height | cut -d '=' -f 2 )
 			;;
 		midentify)
-			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_HEIGHT | cut -d '=' -f 2)
+			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_HEIGHT | cut -d '=' -f 2 )
 			;;
 		ffmpeg)
 			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 2 )
