@@ -1,4 +1,4 @@
-# common.sh.lib v20120609
+# common.sh.lib v20120610
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -74,7 +74,7 @@ generate_alphanumeric_string() {
 # Name wll be alphanumeric not currently in the designated directory
 # Use mktemp if it's available, otherwise try and mimic it.
 #
-# NOTE: There is no guarantee this filename will remain free, making this potentially UNSAFE.
+# NOTE: There is no guarantee this filename will remain available, making this potentially UNSAFE.
 #
 # requires the following to be set prior to calling
 # TEMP_DIR
@@ -82,14 +82,14 @@ generate_alphanumeric_string() {
 
 tmp_random_name() {
 	if command -v mktemp > /dev/null; then
-		mktemp -u --tmpdir="${TEMP_DIR}" "${PN}".XXXXXXXXXX
+		local tmp_name=$( basename $( mktemp -u --tmpdir="${TEMP_DIR}" "${PN}".XXXXXXXXXX ) )
+		echo "${tmp_name}"
 	else
 		local tmp_name=$( generate_alphanumeric_string 10 )
 
 		while [ -e "${TEMP_DIR}/${PN}.$tmp_name" ]; do
 			tmp_name=$( generate alphanumeric_string 10 )	
 		done
-		echo "$PN.$tmp_name"
+		echo "${PN}.${tmp_name}"
 	fi
 }
-
