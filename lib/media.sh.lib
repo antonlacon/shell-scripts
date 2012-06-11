@@ -25,6 +25,7 @@
 # 4: general failure
 #
 # Functions Provided:
+# CopyAudio
 # CreateAudioPipe
 # CreateVideoPipeAspectShifted
 # CreateVideoPipeStraightThrough
@@ -40,6 +41,24 @@
 # QueryVideoWidth
 # TestForAudio
 # TestForVideo
+
+# CopyAudio(input file, output file)
+# Copy the audio stream from one file into a new file.
+#
+# Relies on invoker to set the following VARIABLES:
+
+CopyAudio() {
+	if command -v ffmpeg -o command -v avconv > /dev/null; then
+		if command -v ffmpeg > /dev/null; then
+			local AUDIO_ENCODER=ffmpeg
+		else
+			local AUDIO_ENCODER=avconv
+		fi
+		"${AUDIO_ENCODER}" -i "${1}" -vn -acodec copy "${2}" || die "Abort: "${AUDIO_ENCODER}" failed in CopyAudio." "2"
+	else
+		die "Abort: No known programs found to copy an audio stream." "2"
+	fi
+}
 
 # CreateAudioPipe(input file)
 # Opens a named pipe and fills it with the audio output of a file
