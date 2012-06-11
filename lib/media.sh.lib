@@ -1,4 +1,4 @@
-# media.sh.lib v20120611
+# media.sh.lib v20120612
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -37,6 +37,7 @@
 # IncreaseAudioVolume
 # QueryAudioCodec
 # QueryVideoAspectRatio
+# QueryVideoFPS
 # QueryVideoHeight
 # QueryVideoWidth
 # TestForAudio
@@ -481,6 +482,30 @@ QueryVideoAspectRatio() {
 			;;
 		esac
 		echo "${VIDEO_ASPECT_RATIO}"
+}
+
+# QueryVideoFPS
+# Query a video file to determine its Frames per Second (FPS)
+#
+# MUST RUN: GatherMediaInfo
+
+QueryVideoFPS() {
+	case "${QUERY_MEDIA_TOOL}" in
+		ffprobe)
+			local VIDEO_FPS=$( echo "${MEDIA_INFO}" | grep r_frame_rate | cut -d '=' -f 2 )
+			;;
+		midentify)
+			local VIDEO_FPS=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_FPS | cut -d '=' -f 2 )
+			;;
+		ffmpeg)
+			echo "INFO: ffmpeg rounds the FPS, results may be sub-par."
+			local VIDEO_FPS=$( echo "${MEDIA_INFO}" | grep Stream | grep Video | cut -d ' ' -f 21 )
+			;;
+		*)
+			die "Abort: Unknown option passed to QueryVideoFPS." "4"
+			;;
+	esac
+	echo "${VIDEO_FPS}"
 }
 
 # QueryVideoHeight
