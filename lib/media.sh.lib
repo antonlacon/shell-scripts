@@ -437,7 +437,7 @@ QueryVideoAspectRatio() {
 			echo "Stubbed."
 			;;
 		*)
-			die "Abort: Failed finding aspect ratio." "3"
+			die "Abort: Unknown option to QueryVideoAspectRatio." "4"
 			;;
 		esac
 		echo "${VIDEO_ASPECT_RATIO}"
@@ -460,7 +460,7 @@ QueryVideoHeight() {
 			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 2 )
 			;;
 		*)
-			die "Abort: Failed finding video height." "3"
+			die "Abort: Unknown option to QueryVideoHeight." "4"
 			;;
 	esac
 	echo "${VIDEO_HEIGHT}"
@@ -483,7 +483,7 @@ QueryVideoWidth() {
 			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 1 )
 			;;
 		*)
-			die "Abort: Failed finding video width." "3"
+			die "Abort: Unknown option to QueryVideoWidth." "4"
 			;;
 	esac
 	echo "${VIDEO_WIDTH}"
@@ -512,7 +512,7 @@ TestForAudio() {
 			local AUDIO_TEST=$( echo "${MEDIA_INFO}" | grep -c Audio )
 			;;
 		*)
-			die "Abort: No known program found to detect audio streams." "2"
+			die "Abort: Unknown option to TestForAudio." "4"
 			;;
 	esac
 	echo "${AUDIO_TEST}"
@@ -538,7 +538,7 @@ TestForVideo() {
 			local VIDEO_TEST=$( echo "${MEDIA_INFO}" | grep -c Video )
 			;;
 		*)
-			die "Abort: No known program found to detect video streams." "3"
+			die "Abort: Unkown option to TestForVideo." "4"
 			;;
 	esac
 	echo "${VIDEO_TEST}"
