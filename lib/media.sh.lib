@@ -351,8 +351,8 @@ EncodeAudio_OggVorbis() {
 	DestroyPipe audio
 }
 
-# IncreaseAudioVolume (integer amount, input file, output file)
-# Increases audio volume. Default is 256 (maintain current)
+# IncreaseAudioVolume (integer amount)
+# Increases audio volume by the integer amount. Default is 256 (maintain current)
 # Must be chained from CreateAudioPipe
 #
 # Integer values > 256 will increase volume.
@@ -360,7 +360,6 @@ EncodeAudio_OggVorbis() {
 #
 # Requires:
 # TEMP_DIR
-# INPUT
 
 IncreaseAudioVolume() {
 	local MEDIA_PIPE="${TEMP_DIR}"/"${AUDIO_PIPE}"
@@ -374,7 +373,15 @@ IncreaseAudioVolume() {
 		mkfifo "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed to create named pipe" "2"
 	fi
 
-	ffmpeg -i "${MEDIA_PIPE}" -acodec pcm_s16le -ac 2 -vol 512 -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed while increasing volume" "2"
+	if command -v ffmpeg -o command -v avconv > /dev/null; then
+		if command -v ffmpeg > /dev/null; then
+			local AUDIO_ENCODER="ffmpeg"
+		else
+			local AUDIO_ENCODER="avconv"
+		fi
+	fi
+
+	"${AUDIO_ENCODER}" -i "${MEDIA_PIPE}" -acodec pcm_s16le -ac 2 -vol "${1}" -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed while increasing volume" "2"
 
 	DestroyPipe audio
 	AUDIO_PIPE="${LOUDER_AUDIO_PIPE}"
@@ -416,7 +423,17 @@ GatherMediaInfo() {
 # Uses: mplayer or FFprobe or ...
 
 QueryAudioChannels() {
-	local AUDIO_CHANNELS=$( ffprobe -show_streams "${1}" | grep "channels=" | sed 's/channels\=//' )
+	case "${QUERY_MEDIA_TOOL}" in
+	ffprobe)
+		local AUDIO_CHANNELS=$( echo "${MEDIA_INFO}" | grep "channels=" | cut -d '=' -f 2 )
+		;;
+	midentify)
+		local AUDIO_CHANNELS=$( echo "${MEDIA_INFO}" | grep ID_AUDIO_NCH | cut -d '=' -f 2 )
+		;;
+	*)
+		die "Abort; Unknown option passed to QueryAudioChannels" "4"
+		;;
+	esac
 	echo "${AUDIO_CHANNELS}"
 }
 
@@ -434,7 +451,7 @@ QueryAudioCodec() {
 			local AUDIO_CODEC=$( echo "${MEDIA_INFO}" | grep "ID_AUDIO_CODEC" | cut -d '=' -f 2 | tr -d 'ff' )
 			;;
 		*)
-			die "Abort: Unknown option to QueryAudioCodec." "4"
+			die "Abort: Unknown option passed to QueryAudioCodec." "4"
 			;;
 	esac
 	echo "${AUDIO_CODEC}"
@@ -456,11 +473,11 @@ QueryVideoAspectRatio() {
 			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_ASPECT | cut -d '=' -f 2 )
 			;;
 		ffmpeg)
-			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | sed -e 's/\ /-/g' -e 's/.$//' | cut -d '-' -f 6 | tr '\:' / )
+			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep Stream | grep Video | cut -d ',' -f 3 | sed -e 's/\ /-/g' -e 's/.$//' | cut -d '-' -f 6 | tr '\:' / )
 			echo "Stubbed."
 			;;
 		*)
-			die "Abort: Unknown option to QueryVideoAspectRatio." "4"
+			die "Abort: Unknown option passed to QueryVideoAspectRatio." "4"
 			;;
 		esac
 		echo "${VIDEO_ASPECT_RATIO}"
@@ -480,10 +497,10 @@ QueryVideoHeight() {
 			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_HEIGHT | cut -d '=' -f 2 )
 			;;
 		ffmpeg)
-			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 2 )
+			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep Stream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 2 )
 			;;
 		*)
-			die "Abort: Unknown option to QueryVideoHeight." "4"
+			die "Abort: Unknown option passed to QueryVideoHeight." "4"
 			;;
 	esac
 	echo "${VIDEO_HEIGHT}"
@@ -503,10 +520,10 @@ QueryVideoWidth() {
 			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_WIDTH | cut -d '=' -f 2)
 			;;
 		ffmpeg)
-			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep Sream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 1 )
+			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep Stream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 1 )
 			;;
 		*)
-			die "Abort: Unknown option to QueryVideoWidth." "4"
+			die "Abort: Unknown option passed to QueryVideoWidth." "4"
 			;;
 	esac
 	echo "${VIDEO_WIDTH}"
@@ -535,7 +552,7 @@ TestForAudio() {
 			local AUDIO_TEST=$( echo "${MEDIA_INFO}" | grep -c Audio )
 			;;
 		*)
-			die "Abort: Unknown option to TestForAudio." "4"
+			die "Abort: Unknown option passed to TestForAudio." "4"
 			;;
 	esac
 	echo "${AUDIO_TEST}"
@@ -561,7 +578,7 @@ TestForVideo() {
 			local VIDEO_TEST=$( echo "${MEDIA_INFO}" | grep -c Video )
 			;;
 		*)
-			die "Abort: Unkown option to TestForVideo." "4"
+			die "Abort: Unkown option passed to TestForVideo." "4"
 			;;
 	esac
 	echo "${VIDEO_TEST}"
