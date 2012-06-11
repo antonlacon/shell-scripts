@@ -1,4 +1,4 @@
-# media.sh.lib v20120610
+# media.sh.lib v20120611
 #
 # Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
 #
@@ -34,6 +34,7 @@
 # EncodeAudio_OggVorbis
 # GatherMediaInfo
 # IncreaseAudioVolume
+# QueryAudioCodec
 # QueryVideoAspectRatio
 # QueryVideoHeight
 # QueryVideoWidth
@@ -365,7 +366,7 @@ IncreaseAudioVolume() {
 GatherMediaInfo() {
 	if command -v ffprobe > /dev/null; then
 		QUERY_MEDIA_TOOL=ffprobe
-		MEDIA_INFO=$( ffprobe -show_streams "${INPUT}" 2>/dev/null )
+		MEDIA_INFO=$( ffprobe -show_streams "${INPUT}" 2>&1 )
 	elif command -v midentify > /dev/null; then
 		QUERY_MEDIA_TOOL=midentify
 		MEDIA_INFO=$( midentify "${INPUT}" )
@@ -394,6 +395,26 @@ GatherMediaInfo() {
 QueryAudioChannels() {
 	local AUDIO_CHANNELS=$( ffprobe -show_streams "${1}" | grep "channels=" | sed 's/channels\=//' )
 	echo "${AUDIO_CHANNELS}"
+}
+
+# QueryAudioCodec
+# Determine the audio codec used in a stream
+#
+# MUST RUN: GatherMediaInfo
+
+QueryAudioCodec() {
+	case "${QUERY_MEDIA_TOOL}" in
+		ffprobe|ffmpeg)
+			local AUDIO_CODEC=$( echo "${MEDIA_INFO}" | grep Stream | grep Audio | cut -d ' ' -f 8 )
+			;;
+		midentify)
+			local AUDIO_CODEC=$( echo "${MEDIA_INFO}" | grep "ID_AUDIO_CODEC" | cut -d '=' -f 2 | tr -d 'ff' )
+			;;
+		*)
+			die "Abort: Unknown option to QueryAudioCodec." "4"
+			;;
+	esac
+	echo "${AUDIO_CODEC}"
 }
 
 # QueryAudioStreamMap(input file)
