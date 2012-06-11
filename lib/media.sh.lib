@@ -84,10 +84,13 @@ CreateAudioPipe() {
 
 	# Make a named pipe and fill it with transcoder's output in WAV format.
 	# Select an audio transcoder to output WAV: (ffmpeg, libav, mplayer)
-	if command -v ffmpeg > /dev/null; then
-		ffmpeg -i "${1}" -acodec pcm_s16le -ac "${AUDIO_CHANNELS}" -f wav -y "${TEMP_DIR}"/"${AUDIO_PIPE}" &>/dev/null &
-	elif command -v avconv > /dev/null; then
-		avconv -i "${1}" -acodec pcm_s16le -ac "${AUDIO_CHANNELS}" -f wav -y "${TEMP_DIR}"/"${AUDIO_PIPE}" &>/dev/null &
+	if command -v ffmpeg -o command -v avconv > /dev/null; then
+		if command -v ffmpeg > /dev/null; then
+			local AUDIO_ENCODER="ffmpeg"
+		else
+			local AUDIO_ENCODER="avconv"
+		fi
+		"${AUDIO_ENCODER}" -i "${1}" -acodec pcm_s16le -ac "${AUDIO_CHANNELS}" -f wav -y "${TEMP_DIR}"/"${AUDIO_PIPE}" &>/dev/null &
 	elif command -v mplayer > /dev/null; then
 		mplayer -really-quiet -nocorrect-pts -vo null -vc null -ao pcm:waveheader:fast:file="${TEMP_DIR}"/"${AUDIO_PIPE}" "${1}" &
 	else
@@ -362,6 +365,7 @@ EncodeAudio_OggVorbis() {
 IncreaseAudioVolume() {
 	local MEDIA_PIPE="${TEMP_DIR}"/"${AUDIO_PIPE}"
 	local LOUDER_AUDIO_PIPE=$( tmp_random_name )
+	echo "IncreaseAudioVolume Pipe is: "$AUDIO_PIPE
 
 	# Test for existence of audiopipe already
 	if [ -e "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" ]; then
@@ -374,7 +378,7 @@ IncreaseAudioVolume() {
 
 	DestroyPipe audio
 	AUDIO_PIPE="${LOUDER_AUDIO_PIPE}"
-	echo "IncreaseAudioVolume Pipe is: "$AUDIO_PIPE
+	echo "New named audio pipe is: "$AUDIO_PIPE
 }
 
 # GatherMediaInfo
