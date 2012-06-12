@@ -36,9 +36,10 @@
 # GatherMediaInfo
 # IncreaseAudioVolume
 # QueryAudioCodec
-# QueryVideoAspectRatio
+# QueryVideoDisplayAspectRatio
 # QueryVideoFPS
 # QueryVideoHeight
+# QueryVideoSampleAspectRatio
 # QueryVideoWidth
 # TestForAudio
 # TestForVideo
@@ -460,28 +461,34 @@ QueryAudioCodec() {
 
 # QueryAudioStreamMap(input file)
 
-# QueryVideoAspectRatio
+# QueryVideoDisplayAspectRatio
 # Query a video file to determine its display aspect ratio
 #
 # MUST RUN: GatherMediaInfo
 
-QueryVideoAspectRatio() {
+QueryVideoDisplayAspectRatio() {
 	case "${QUERY_MEDIA_TOOL}" in
 		ffprobe)
-			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep display_aspect_ratio | cut -d '=' -f 2 )
+			local VIDEO_DISPLAY_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep display_aspect_ratio | cut -d '=' -f 2 )
 			;;
 		midentify)
-			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_ASPECT | cut -d '=' -f 2 )
+			local VIDEO_DISPLAY_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_ASPECT | cut -d '=' -f 2 )
+			if [ "${VIDEO_DISPLAY_ASPECT_RATIO}" -eq 1.7778 ]; then
+				local VIDEO_DISPLAY_ASPECT_RATIO="16/9"
+			elif [ "${VIDEO_DISPLAY_ASPECT_RATIO}" -eq 1.3333 ]; then
+				local VIDEO_DISPLAY_ASPECT_RATIO="4/3"
+			else
+				echo "NOTICE: You have a video with an odd aspect resolution. Is it genuine? Email me to include it."
+			fi
 			;;
 		ffmpeg)
-			local VIDEO_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep Stream | grep Video | cut -d ',' -f 3 | sed -e 's/\ /-/g' -e 's/.$//' | cut -d '-' -f 6 | tr '\:' / )
-			echo "Stubbed."
+			local VIDEO_DISPLAY_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep Stream | grep Video | cut -d ',' -f 3 | sed -e 's/\ /-/g' -e 's/.$//' | cut -d '-' -f 6 | tr '\:' / )
 			;;
 		*)
-			die "Abort: Unknown option passed to QueryVideoAspectRatio." "4"
+			die "Abort: Unknown option passed to QueryVideoDisplayAspectRatio." "4"
 			;;
 		esac
-		echo "${VIDEO_ASPECT_RATIO}"
+		echo "${VIDEO_DISPLAY_ASPECT_RATIO}"
 }
 
 # QueryVideoFPS
@@ -531,6 +538,23 @@ QueryVideoHeight() {
 	echo "${VIDEO_HEIGHT}"
 }
 
+# QueryVideoSampleAspectRatio
+# Query a video file to determine its sample aspect ratio
+#
+# MUST RUN: GatherMediaInfo
+
+QueryVideoSampleAspectRatio() {
+	case "${QUERY_MEDIA_TOOL}" in
+		ffprobe)
+			local VIDEO_SAMPLE_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep sample_aspect_ratio | cut -d '=' -f 2 )
+			;;
+		*)
+			die "Abort: Unknown option passed to ""${0}""." "4"
+			;;
+	esac
+	echo "${VIDEO_SAMPLE_ASPECT_RATIO}"
+}
+
 # QueryVideoWidth
 # Query a video file to determine its display width
 #
@@ -554,16 +578,11 @@ QueryVideoWidth() {
 	echo "${VIDEO_WIDTH}"
 }
 
-# QueryVideoAspectRatio
-# Query a video file to determine its display aspect ratio
-
 # TestForAudio(input file)
 # Check a file for the presence of an audio stream
 # Uses: ffprobe, midentify, mplayer, or ffmpeg
 #
 # MUST RUN: GatherMediaInfo
-
-# Needs avconv programs
 
 TestForAudio() {
 	case "${QUERY_MEDIA_TOOL}" in
@@ -588,8 +607,6 @@ TestForAudio() {
 # Uses: ffprobe, midentify, mplayer, or ffmpeg
 #
 # MUST RUN: GatherMediaInfo
-
-# Needs avconv programs
 
 TestForVideo() {
 	case "${QUERY_MEDIA_TOOL}" in
