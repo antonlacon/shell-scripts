@@ -27,7 +27,8 @@
 # Functions Provided:
 # CopyAudio
 # CreateAudioPipe
-# CreateVideoPipeAspectShifted
+# CreateVideoPipeResize
+# CreateVideoPipeResizePreserveAspect
 # CreateVideoPipeStraightThrough
 # DestroyPipe
 # EncodeAudio_FlacFlac
@@ -104,8 +105,15 @@ CreateAudioPipe() {
 	fi
 }
 
-# CreateVideoPipeAspectShifted(input file)
-# Creates a named pipe that transcoded video to X standard while converting display aspect ratio to 4/3, while maintaining original video aspect ratio
+# CreateVideoPipeResize(input file)
+# Creates a named pipe with transcoded video that has been resized without care for the original aspect ratio
+# Requirements: mplayer, mkfifo
+#
+# Relies on invoker to set the following VARIABLES:
+# TEMP_DIR
+
+# CreateVideoPipeResizePreserveAspect(input file)
+# Creates a named pipe with transcoded video that has been resized and adjusted to preserve the original content's aspect ratio when being used on a device with a different aspect ratio
 # Requirements: mplayer, mkfifo
 #
 # Relies on invoker to set the following VARIABLES:
@@ -114,7 +122,7 @@ CreateAudioPipe() {
 # TEMP_DIR
 # DEVICE_WIDTH
 
-CreateVideoPipeAspectShifted() {
+CreateVideoPipeResizePreserveAspect() {
 	VIDEO_PIPE=$( tmp_random_name )
 	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
 
