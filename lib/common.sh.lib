@@ -71,7 +71,7 @@ generate_alphanumeric_string() {
 
 # tmp_random_name()
 # Create a temporary filename for use by another command
-# Name wll be alphanumeric not currently in the designated directory
+# Name will be alphanumeric not currently in the designated directory
 # Use mktemp if it's available, otherwise try and mimic it.
 #
 # NOTE: There is no guarantee this filename will remain available, making this potentially UNSAFE.
