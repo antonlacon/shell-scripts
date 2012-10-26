@@ -25,6 +25,7 @@
 # 4: general failure
 #
 # Functions Provided:
+# ClearMediaInfo
 # CopyAudio
 # CreateAudioPipe
 # CreateVideoPipeResize
@@ -44,6 +45,13 @@
 # QueryVideoWidth
 # TestForAudio
 # TestForVideo
+
+# ClearMediaInfo()
+# Unset the GatherMediaInfo variable
+
+ClearMediaInfo() {
+	unset -v QUERY_MEDIA_TOOL MEDIA_INFO
+}
 
 # CopyAudio(input file, output file)
 # Copy the audio stream from one file into a new file.
@@ -192,7 +200,7 @@ DestroyPipe() {
 		local NAMED_PIPE="${VIDEO_PIPE}"
 		;;
 	*)
-		die "Abort: Unknown usgae of DestroyPipe" "4"
+		die "Abort: Unknown usage of DestroyPipe" "4"
 		;;
 	esac
 
@@ -260,9 +268,9 @@ EncodeAudio_MP4AAC() {
 
 	if command -v neroAacEnc > /dev/null; then
 		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
-			local AUDIO_QUALITY="${NEROAACENC_AUDIO_QUALITY_VIDEO}"
+			local AUDIO_QUALITY="${NEROAACENC_AAC_AUDIO_QUALITY_VIDEO}"
 		else
-			local AUDIO_QUALITY="${NEROAACENC_AUDIO_QUALITY_STANDALONE}"
+			local AUDIO_QUALITY="${NEROAACENC_AAC_AUDIO_QUALITY_STANDALONE}"
 		fi
 
 		CreateAudioPipe "${1}"
