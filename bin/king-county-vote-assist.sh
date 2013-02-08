@@ -69,11 +69,13 @@ else
 fi
 
 # dependency check: pdftk
-if [[ ! command -v pdftk > /dev/null ]]; then
+command -v pdftk > /dev/null
+if [[ $? -eq 0 ]]; then
 	die "Abort: Could not locate pdftk." 1
 fi
 # dependency check: pdfinfo
-if [[ ! command -v pdfinfo > /dev/null ]]; then
+command -v pdfinfo > /dev/null
+if [[ $? -eq 0 ]]; then
 	die "Abort: Could not locate pdfinfo." 1
 fi
 ### END PRE-CHECK ###
