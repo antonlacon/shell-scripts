@@ -88,4 +88,4 @@ SIZE_OF_PDF="${SIZE_OF_PDF#*\ }"
 
 pdftk A="${VOTER_PACKET}" B="${BALLOT_SIGNATURE}" cat A"${COVER_SHEET}" B A1-"${VOTER_SELECTION_END}"  output "${OUTPUT}"
 
-exit
+exit 0
