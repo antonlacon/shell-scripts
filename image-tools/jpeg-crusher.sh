@@ -2,8 +2,19 @@
 #
 # Copyright 2015 Ian Leonard <antonlacon@gmail.com>
 #
-# This is free software, licensed under the GNU General Public LIcense v3.
-# See /LICENSE for more information or http://www.gnu.org/licenses/gpl.html
+# This file is jpeg-crusher.sh.
+#
+# jpeg-crusher.sh is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# jpeg-crusher.sh is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with jpeg-crusher.sh. If not, see <http://www.gnu.org/licenses/>.
 #
 # Version: 20150703
 #
