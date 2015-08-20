@@ -1,15 +1,15 @@
 #!/bin/bash
-# Merge King County ballot signature page with pages from original ballot to save on size and preserve clarity while emailing.
+# Merge King County, WA, USA ballot signature page with pages from original ballot to save on size and preserve clarity while emailing.
 #
-# Copyright 2012-2014 Ian Leonard <antonlacon@gmail.com>
+# Copyright 2012-2015 Ian Leonard <antonlacon@gmail.com>
 #
 # This file is king-county-vote-assist.sh.
 #
-# king-count-vote-assist.sh is free software: you can redistribute it and/or modify
+# king-county-vote-assist.sh is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, version 3 of the License.
 #
-# king-count-vote-assist.sh is distributed in the hope that it will be useful,
+# king-county-vote-assist.sh is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
@@ -69,13 +69,11 @@ else
 fi
 
 # dependency check: pdftk
-command -v pdftk > /dev/null
-if [[ $? -eq 0 ]]; then
+if ! command -v pdftk > /dev/null; then
 	die "Abort: Could not locate pdftk." 1
 fi
 # dependency check: pdfinfo
-command -v pdfinfo > /dev/null
-if [[ $? -eq 0 ]]; then
+if ! command -v pdfinfo > /dev/null; then
 	die "Abort: Could not locate pdfinfo." 1
 fi
 ### END PRE-CHECK ###
