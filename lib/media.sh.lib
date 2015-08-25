@@ -1,6 +1,6 @@
-# media.sh.lib v20121025
+# media.sh.lib v20150825
 #
-# Copyright 2011-2012: Ian Leonard <antonlacon@gmail.com>
+# Copyright 2011-2015: Ian Leonard <antonlacon@gmail.com>
 #
 # This file is media.sh.lib.
 #
@@ -59,13 +59,8 @@ ClearMediaInfo() {
 # Relies on invoker to set the following VARIABLES:
 
 CopyAudio() {
-	if command -v ffmpeg -o command -v avconv > /dev/null; then
-		if command -v ffmpeg > /dev/null; then
-			local AUDIO_ENCODER=ffmpeg
-		else
-			local AUDIO_ENCODER=avconv
-		fi
-		"${AUDIO_ENCODER}" -i "${1}" -vn -acodec copy "${2}" || die "Abort: "${AUDIO_ENCODER}" failed in CopyAudio." "2"
+	if command -v ffmpeg > /dev/null; then
+		ffmpeg -i "${1}" -vn -acodec copy "${2}" || die "Abort: ffmpeg failed in CopyAudio." "2"
 	else
 		die "Abort: No known programs found to copy an audio stream." "2"
 	fi
@@ -73,7 +68,7 @@ CopyAudio() {
 
 # CreateAudioPipe(input file)
 # Opens a named pipe and fills it with the audio output of a file
-# Requirements: ffmpeg or avconv or mplayer, mkfifo, common.sh.lib
+# Requirements: ffmpeg or mplayer, mkfifo, common.sh.lib
 # See also: DestroyPipe
 #
 # Relies on invoker to set the following VARIABLES:
@@ -94,14 +89,9 @@ CreateAudioPipe() {
 	fi
 
 	# Make a named pipe and fill it with transcoder's output in WAV format.
-	# Select an audio transcoder to output WAV: (ffmpeg, libav, mplayer)
-	if command -v ffmpeg -o command -v avconv > /dev/null; then
-		if command -v ffmpeg > /dev/null; then
-			local AUDIO_ENCODER="ffmpeg"
-		else
-			local AUDIO_ENCODER="avconv"
-		fi
-		"${AUDIO_ENCODER}" -i "${1}" -acodec pcm_s16le -ac "${AUDIO_CHANNELS}" -f wav -y "${TEMP_DIR}"/"${AUDIO_PIPE}" &>/dev/null &
+	# Select an audio transcoder to output WAV: (ffmpeg, mplayer)
+	if command -v ffmpeg > /dev/null; then
+		ffmpeg -i "${1}" -acodec pcm_s16le -ac "${AUDIO_CHANNELS}" -f wav -y "${TEMP_DIR}"/"${AUDIO_PIPE}" &>/dev/null &
 	elif command -v mplayer > /dev/null; then
 		mplayer -really-quiet -nocorrect-pts -vo null -vc null -ao pcm:waveheader:fast:file="${TEMP_DIR}"/"${AUDIO_PIPE}" "${1}" &
 	else
@@ -212,27 +202,21 @@ DestroyPipe() {
 # EncodeAudio_FlacFlac(input file)
 # Convert input file to Flac in the native Flac container
 # Flac has no quality settings, only compressoin levels. Always use the best.
-# Requirements: ffmpeg or avconv or flac
+# Requirements: ffmpeg or flac
 #
 # Relies on invoker to set following VARIABLES:
 # TEMP_DIR
 
 EncodeAudio_FlacFlac() {
 	# reference flac encoder needs coaxing to work with named pipes, and is picky about input formats - make it last.
-	if command -v ffmpeg -o command -v avconv > /dev/null; then
-		if command -v ffmpeg; then
-			local AUDIO_ENCODER="ffmpeg"
-		else
-			local AUDIO_ENCODER="avconv"
-		fi
-
-		FLAC_SUPPORT=$( "${AUDIO_ENCODER}" -codecs | grep -c "FLAC (Free Lossless Audio Codec)" )
+	if command -v ffmpeg > /dev/null; then
+		FLAC_SUPPORT=$( ffmpeg -codecs | grep -c "FLAC (Free Lossless Audio Codec)" )
 		if [ $FLAC_SUPPORT -eq 0 ]; then
-			die "Abort: ""${AUDIO_ENCODER}"" does not appear to support flac."
+			die "Abort: "ffmpeg does not appear to support flac."
 		fi
 
 		CreateAudioPipe "${1}"
-		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec flac -compression_level 8 "${TEMP_DIR}"/audio.flac || die "${AUDIO_ENCODER}"" failed" "2"
+		ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec flac -compression_level 8 "${TEMP_DIR}"/audio.flac || die "ffmpeg failed" "2"
 		DestroyPipe audio	
 	elif command -v flac > /dev/null; then
 # uncomment if time is found to make this work with named pipes
@@ -249,13 +233,11 @@ EncodeAudio_FlacFlac() {
 # TEMP_DIR
 #
 # For audio files, the following must also be set:
-# AVCONV_AAC_AUDIO_QUALITY_STANDALONE
 # FAAC_AAC_AUDIO_QUALITY_STANDALONE
 # FFMPEG_AAC_AUDIO_QUALITY_STANDALONE
 # NEROAACENC_AAC_AUDIO_QUALITY_STANDALONE
 #
 # For video files, the following must also be set:
-# AVCONV_AAC_AUDIO_QUALITY_VIDEO
 # HAS_VIDEO
 # FAAC_AAC_AUDIO_QUALITY_VIDEO
 # FFMPEG_AAC_AUDIO_QUALITY_VIDEO
@@ -263,7 +245,7 @@ EncodeAudio_FlacFlac() {
 
 EncodeAudio_MP4AAC() {
 	# Test for audio encoders and set quality variable accordingly
-	# Priority Order (descending): neroAacEnc, faac, ffmpeg, avconv
+	# Priority Order (descending): neroAacEnc, faac, ffmpeg
 	# Build a named pipe and fill it with uncompressed WAV. Have the audio encoder read from the pipe
 
 	if command -v neroAacEnc > /dev/null; then
@@ -284,33 +266,23 @@ EncodeAudio_MP4AAC() {
 
 		CreateAudioPipe "${1}"
 		faac -q "${AUDIO_QUALITY}" -o "${TEMP_DIR}"/audio.mp4 "${TEMP_DIR}"/"${AUDIO_PIPE}" || die "faac failed" "2"
-	elif command -v ffmpeg -o command -v avconv > /dev/null; then
-		if command -v ffmpeg; then
-			local AUDIO_ENCODER="ffmpeg"
-			if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
-				local AUDIO_QUALITY="${FFMPEG_AAC_AUDIO_QUALITY_VIDEO}"
-			else
-				local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE}"
-			fi
+	elif command -v ffmpeg > /dev/null; then
+		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+			local AUDIO_QUALITY="${FFMPEG_AAC_AUDIO_QUALITY_VIDEO}"
 		else
-			local AUDIO_ENCODER="avconv"
-			if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
-				local AUDIO_QUALITY="${AVCONV_AAC_AUDIO_QUALITY_VIDEO}"
-			else
-				local AUDIO_QUALITY="${AVCONV_VORBIS_AUDIO_QUALITY_STANDALONE}"
-			fi
+			local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE}"
 		fi
 
-		AAC_SUPPORT=$( "${AUDIO_ENCODER}" -codecs | grep -c "libfaac AAC \(Advanced Audio Codec\)" )
+		AAC_SUPPORT=$( ffmpeg -codecs | grep -c "libfaac AAC \(Advanced Audio Codec\)" )
 		if [ $AAC_SUPPORT -eq 0 ]; then
-			die "Abort: ""${AUDIO_ENCODER}"" does not appear to support aac encoding."
+			die "Abort: "ffmpeg does not appear to support aac encoding."
 		fi
 
 		CreateAudioPipe "${1}"
 		# Uses libfaac as FFmpeg's aac encoder is experimental
-		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec aac -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.mp4 || die "${AUDIO_ENCODER}"" failed" "2"
+		ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec aac -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.mp4 || die "ffmpeg$ failed" "2"
 	else
-		die "Abort: Failed to locate neroAacEnc, faac, ffmpeg or avconv in your \$PATH." "2"
+		die "Abort: Failed to locate neroAacEnc, faac, or ffmpeg in your \$PATH." "2"
 	fi
 
 	DestroyPipe audio
@@ -318,7 +290,7 @@ EncodeAudio_MP4AAC() {
 
 # EncodeAudio_OggVorbis(input file)
 # Converts input file to Vorbis and puts into an ogg container.
-# Requirements: vorbis-tools or ffmpeg or avconv, common.sh.lib
+# Requirements: vorbis-tools or ffmpeg, common.sh.lib
 #
 # Relies on invoker to set following VARIABLES:
 # TEMP_DIR
@@ -326,13 +298,11 @@ EncodeAudio_MP4AAC() {
 # For audio files, the following must also be set:
 # OGGENC_VORBIS_AUDIO_QUALITY_STANDALONE
 # FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE
-# AVCONV_VORBIS_AUDIO_QUALITY_STANDALONE
 #
 # For video files, the following must also be set:
 # HAS_VIDEO
 # OGGENC_VORBIS_AUDIO_QUALITY_VIDEO
 # FFMPEG_VORBIS_AUDIO_QUALITY_VIDEO
-# AVCONV_VORBIS_AUDIO_QUALITY_VIDEO
 
 EncodeAudio_OggVorbis() {
 	if command -v oggenc > /dev/null; then
@@ -344,27 +314,17 @@ EncodeAudio_OggVorbis() {
 
 		CreateAudioPipe "${1}"
 		oggenc -q "${AUDIO_QUALITY}" --ignorelength "${TEMP_DIR}"/"${AUDIO_PIPE}" -o "${TEMP_DIR}"/audio.ogg || die "oggenc failed" "2"
-	elif command -v ffmpeg -o command -v avconv > /dev/null; then
-		if command -v ffmpeg; then
-			local AUDIO_ENCODER="ffmpeg"
-			if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
-				local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_VIDEO}"
-			else
-				local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE}"
-			fi
+	elif command -v ffmpeg > /dev/null; then
+		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+			local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_VIDEO}"
 		else
-			local AUDIO_ENCODER="avconv"
-			if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
-				local AUDIO_QUALITY="${AVCONV_VORBIS_AUDIO_QUALITY_VIDEO}"
-			else
-				local AUDIO_QUALITY="${AVCONV_VORBIS_AUDIO_QUALITY_STANDALONE}"
-			fi
+			local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE}"
 		fi
 		CreateAudioPipe "${1}"
 		#NOTE: FFmpeg's vorbis implementation is experimental - using their libvorbis hook instead.
-		"${AUDIO_ENCODER}" -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec libvorbis -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.ogg || die "${AUDIO_ENCODER}"" failed" "2"
+		ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec libvorbis -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.ogg || die "ffmpeg failed" "2"
 	else
-		die "Abort: Failed to locate oggenc, ffmpeg or avconv in your \$PATH." "2"
+		die "Abort: Failed to locate oggenc or ffmpeg in your \$PATH." "2"
 	fi
 	DestroyPipe audio
 }
@@ -391,25 +351,19 @@ IncreaseAudioVolume() {
 		mkfifo "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed to create named pipe" "2"
 	fi
 
-	if command -v ffmpeg -o command -v avconv > /dev/null; then
-		if command -v ffmpeg > /dev/null; then
-			local AUDIO_ENCODER="ffmpeg"
-		else
-			local AUDIO_ENCODER="avconv"
-		fi
+	if command -v ffmpeg > /dev/null; then
+		ffmpeg -i "${MEDIA_PIPE}" -acodec pcm_s16le -ac 2 -vol "${1}" -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed while increasing volume" "2"
+
+		DestroyPipe audio
+		AUDIO_PIPE="${LOUDER_AUDIO_PIPE}"
+		echo "New named audio pipe is: "$AUDIO_PIPE
+	else
+		die "Abort: Could not locate ffmpeg in \$PATH" "2"
 	fi
-
-	"${AUDIO_ENCODER}" -i "${MEDIA_PIPE}" -acodec pcm_s16le -ac 2 -vol "${1}" -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed while increasing volume" "2"
-
-	DestroyPipe audio
-	AUDIO_PIPE="${LOUDER_AUDIO_PIPE}"
-	echo "New named audio pipe is: "$AUDIO_PIPE
 }
 
 # GatherMediaInfo
 # Store the output of a media query tool (midentify, ffprobe, etc) and set the tool to use for querying.
-
-# need to add the avconv tools
 
 GatherMediaInfo() {
 	if command -v ffprobe > /dev/null; then
