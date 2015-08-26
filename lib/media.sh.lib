@@ -227,20 +227,20 @@ EncodeAudio_FlacFlac() {
 
 # EncodeAudio_MP4AAC(input file)
 # Converts input file to AAC and puts into an mp4 container.
-# Requirements: neroAacEnc or faac, common.sh.lib
+# Requirements: common.sh.lib and neroAacEnc, faac, or ffmpeg
 #
 # Relies on invoker to set following VARIABLES:
 # TEMP_DIR
 #
-# For audio files, the following must also be set:
+# For audio files, the approviate value of the following must also be set:
 # FAAC_AAC_AUDIO_QUALITY_STANDALONE
-# FFMPEG_AAC_AUDIO_QUALITY_STANDALONE
+# LIBFDK_AAC_AUDIO_QUALITY_STANDALONE
 # NEROAACENC_AAC_AUDIO_QUALITY_STANDALONE
 #
-# For video files, the following must also be set:
+# For video files, the following must be set:
 # HAS_VIDEO
 # FAAC_AAC_AUDIO_QUALITY_VIDEO
-# FFMPEG_AAC_AUDIO_QUALITY_VIDEO
+# LIBFDK_AAC_AUDIO_QUALITY_VIDEO
 # NEROAACENC_AAC_AUDIO_QUALITY_VIDEO
 
 EncodeAudio_MP4AAC() {
@@ -268,19 +268,19 @@ EncodeAudio_MP4AAC() {
 		faac -q "${AUDIO_QUALITY}" -o "${TEMP_DIR}"/audio.mp4 "${TEMP_DIR}"/"${AUDIO_PIPE}" || die "faac failed" "2"
 	elif command -v ffmpeg > /dev/null; then
 		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
-			local AUDIO_QUALITY="${FFMPEG_AAC_AUDIO_QUALITY_VIDEO}"
+			local AUDIO_QUALITY="${LIBFDK_AAC_AUDIO_QUALITY_VIDEO}"
 		else
-			local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE}"
+			local AUDIO_QUALITY="${LIBFDK_AAC_AUDIO_QUALITY_STANDALONE}"
 		fi
 
-		AAC_SUPPORT=$( ffmpeg -codecs | grep -c "libfaac AAC \(Advanced Audio Codec\)" )
+		AAC_SUPPORT=$( ffmpeg -codecs | grep -c "AAC \(Advanced Audio Codec\)" )
 		if [ $AAC_SUPPORT -eq 0 ]; then
-			die "Abort: "ffmpeg does not appear to support aac encoding."
+			die "Abort: "ffmpeg does not appear to support aac."
 		fi
 
 		CreateAudioPipe "${1}"
 		# Uses libfaac as FFmpeg's aac encoder is experimental
-		ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec aac -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.mp4 || die "ffmpeg$ failed" "2"
+		ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec libfdk_aac -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.mp4 || die "ffmpeg$ failed" "2"
 	else
 		die "Abort: Failed to locate neroAacEnc, faac, or ffmpeg in your \$PATH." "2"
 	fi
