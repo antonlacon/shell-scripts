@@ -273,9 +273,9 @@ EncodeAudio_MP4AAC() {
 			local AUDIO_QUALITY="${LIBFDK_AAC_AUDIO_QUALITY_STANDALONE}"
 		fi
 
-		AAC_SUPPORT=$( ffmpeg -codecs | grep -c "AAC \(Advanced Audio Codec\)" )
+		AAC_SUPPORT=$( ffmpeg -codecs | grep -c "AAC (Advanced Audio Coding)" )
 		if [ $AAC_SUPPORT -eq 0 ]; then
-			die "Abort: "ffmpeg does not appear to support aac."
+			die "Abort: ffmpeg does not appear to support aac."
 		fi
 
 		CreateAudioPipe "${1}"
