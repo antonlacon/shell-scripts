@@ -109,6 +109,32 @@ CreateAudioPipe() {
 #
 # Relies on invoker to set the following VARIABLES:
 # TEMP_DIR
+# DEVICE_WIDTH
+# DEVICE_HEIGHT
+
+CreateVideoPipeResize() {
+	VIDEO_PIPE=$( tmp_random_name )
+	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
+
+	# Test for existence of videopipe already
+	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
+		die "Abort: Named pipe file already exists." "3"
+	else
+	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE} || die "failed to create named pipe" "3"
+	fi
+
+	if command -v mplayer > /dev/null; then
+	        # mplayer's vf filter chain scales video to device's display width and height regardless of aspect ratio
+	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf scale="${DEVICE_WIDTH}":"${DEVICE_HEIGHT}"  -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	else
+		die "Abort: No supported video transcoder detected." "3"
+	fi
+
+	if [ $? -ne 0 ]; then
+		die "Abort: Failed to fill named pipe." "3"
+	fi
+}
+
 
 # CreateVideoPipeResizePreserveAspect(input file)
 # Creates a named pipe with transcoded video that has been resized and adjusted to preserve the original content's aspect ratio when being used on a device with a different aspect ratio
