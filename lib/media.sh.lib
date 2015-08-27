@@ -37,12 +37,12 @@
 # EncodeAudio_OggOpus
 # EncodeAudio_OggVorbis
 # GatherMediaInfo
-# IncreaseAudioVolume
+# IncreaseAudioVolume #Probably Broken
 # QueryAudioCodec
 # QueryVideoDisplayAspectRatio
 # QueryVideoFPS
 # QueryVideoHeight
-# QueryVideoSampleAspectRatio
+# QueryVideoSampleAspectRatio #Incomplete
 # QueryVideoWidth
 # TestForAudio
 # TestForVideo
@@ -407,6 +407,7 @@ EncodeAudio_OggVorbis() {
 # Requires:
 # TEMP_DIR
 
+# Creates an audio pipe without destroy it on failure. Needs restructuring.
 IncreaseAudioVolume() {
 	local MEDIA_PIPE="${TEMP_DIR}"/"${AUDIO_PIPE}"
 	local LOUDER_AUDIO_PIPE=$( tmp_random_name )
@@ -420,7 +421,7 @@ IncreaseAudioVolume() {
 	fi
 
 	if command -v ffmpeg > /dev/null; then
-		ffmpeg -i "${MEDIA_PIPE}" -acodec pcm_s16le -ac 2 -vol "${1}" -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed while increasing volume" "2"
+		ffmpeg -i "${MEDIA_PIPE}" -acodec pcm_s16le -vol "${1}" -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed while increasing volume" "2"
 
 		DestroyPipe audio
 		AUDIO_PIPE="${LOUDER_AUDIO_PIPE}"
