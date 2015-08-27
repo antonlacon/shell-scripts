@@ -261,21 +261,35 @@ EncodeAudio_FlacFlac() {
 #
 # For audio files, the appropriate value of the following must also be set:
 # FAAC_AAC_AUDIO_QUALITY_STANDALONE
+# FFMPEG_AAC_AUDIO_QUALITY_STANDALONE
 # LIBFDK_AAC_AUDIO_QUALITY_STANDALONE
 # NEROAACENC_AAC_AUDIO_QUALITY_STANDALONE
 #
 # For video files, the following must be set:
 # HAS_VIDEO
 # FAAC_AAC_AUDIO_QUALITY_VIDEO
+# FFMPEG_AAC_AUDIO_QUALITY_VIDEO
 # LIBFDK_AAC_AUDIO_QUALITY_VIDEO
 # NEROAACENC_AAC_AUDIO_QUALITY_VIDEO
 
 EncodeAudio_MP4AAC() {
 	# Test for audio encoders and set quality variable accordingly
-	# Priority Order (descending): neroAacEnc, faac, ffmpeg
+	# Priority Order (descending): libfdk_aac, neroAacEnc, faac, ffmpeg
 	# Build a named pipe and fill it with uncompressed WAV. Have the audio encoder read from the pipe
 
-	if command -v neroAacEnc > /dev/null; then
+	if command -v ffmpeg; then
+		local AAC_SUPPORT=$( ffmpeg -codecs | grep -c "libfdk_aac" )
+		if [ "${AAC_SUPPORT}" -ge 1 ]; then
+			if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+				local AUDIO_QUALITY="${LIBFDK_AAC_AUDIO_QUALITY_VIDEO}"
+			else
+				local AUDIO_QUALITY="${LIBFDK_AAC_AUDIO_QUALITY_STANDALONE}"
+			fi
+
+			CreateAudioPipe "${1}"
+			ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec libfdk_aac -vbr "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.mp4 || die "ffmpeg failed." "2"
+		fi
+	elif command -v neroAacEnc > /dev/null; then
 		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
 			local AUDIO_QUALITY="${NEROAACENC_AAC_AUDIO_QUALITY_VIDEO}"
 		else
@@ -295,19 +309,19 @@ EncodeAudio_MP4AAC() {
 		faac -q "${AUDIO_QUALITY}" -o "${TEMP_DIR}"/audio.mp4 "${TEMP_DIR}"/"${AUDIO_PIPE}" || die "faac failed" "2"
 	elif command -v ffmpeg > /dev/null; then
 		if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
-			local AUDIO_QUALITY="${LIBFDK_AAC_AUDIO_QUALITY_VIDEO}"
+			local AUDIO_QUALITY="${FFMPEG_AAC_AUDIO_QUALITY_VIDEO}"
 		else
-			local AUDIO_QUALITY="${LIBFDK_AAC_AUDIO_QUALITY_STANDALONE}"
+			local AUDIO_QUALITY="${FFMPEG_AAC_AUDIO_QUALITY_STANDALONE}"
 		fi
 
 		AAC_SUPPORT=$( ffmpeg -codecs | grep -c "AAC (Advanced Audio Coding)" )
-		if [ $AAC_SUPPORT -eq 0 ]; then
+		if [ "${AAC_SUPPORT}" -eq 0 ]; then
 			die "Abort: ffmpeg does not appear to support aac."
 		fi
 
 		CreateAudioPipe "${1}"
-		# Uses libfaac as FFmpeg's aac encoder is experimental
-		ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec libfdk_aac -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.mp4 || die "ffmpeg$ failed" "2"
+		# Uses libfaac as FFmpeg's aac encoder is experimental - is this true?
+		ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec aac -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.mp4 || die "ffmpeg failed" "2"
 	else
 		die "Abort: Failed to locate neroAacEnc, faac, or ffmpeg in your \$PATH." "2"
 	fi
@@ -372,6 +386,7 @@ EncodeAudio_OggVorbis() {
 		else
 			local AUDIO_QUALITY="${FFMPEG_VORBIS_AUDIO_QUALITY_STANDALONE}"
 		fi
+
 		CreateAudioPipe "${1}"
 		#NOTE: FFmpeg's vorbis implementation is experimental - using their libvorbis hook instead.
 		ffmpeg -i "${TEMP_DIR}"/"${AUDIO_PIPE}" -acodec libvorbis -aq "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.ogg || die "ffmpeg failed" "2"
