@@ -19,7 +19,7 @@
 # Common multimedia related functions to assist in shell scripting
 #
 # Exit Codes:
-# 1: reserved for caller
+# 1: reserved for calling script
 # 2: audio related
 # 3: video related
 # 4: general failure
@@ -58,6 +58,7 @@ ClearMediaInfo() {
 # Copy the audio stream from one file into a new file.
 #
 # Relies on invoker to set the following VARIABLES:
+# no variables
 
 CopyAudio() {
 	if command -v ffmpeg > /dev/null; then
@@ -99,19 +100,19 @@ CreateAudioPipe() {
 		die "Abort: No supported audio transcoder detected." "2"
 	fi
 
-	if [ $? -ne 0 ]; then
+	if [ "$?" -ne 0 ]; then
 		die "Abort: Failed to fill named pipe." "2"
 	fi
 }
 
 # CreateVideoPipeResize(input file)
-# Creates a named pipe with transcoded video that has been resized without care for the original aspect ratio
+# Creates a named pipe with transcoded video that has been resized to device dimensions, regardless of aspect ratio
 # Requirements: mplayer, mkfifo
 #
 # Relies on invoker to set the following VARIABLES:
 # TEMP_DIR
-# DEVICE_WIDTH
 # DEVICE_HEIGHT
+# DEVICE_WIDTH
 
 CreateVideoPipeResize() {
 	VIDEO_PIPE=$( tmp_random_name )
@@ -135,7 +136,6 @@ CreateVideoPipeResize() {
 		die "Abort: Failed to fill named pipe." "3"
 	fi
 }
-
 
 # CreateVideoPipeResizePreserveAspect(input file)
 # Creates a named pipe with transcoded video that has been resized and adjusted to preserve the original content's aspect ratio when being used on a device with a different aspect ratio
@@ -238,7 +238,7 @@ EncodeAudio_FlacFlac() {
 	# reference flac encoder needs coaxing to work with named pipes, and is picky about input formats - make it last.
 	if command -v ffmpeg > /dev/null; then
 		FLAC_SUPPORT=$( ffmpeg -codecs | grep -c "FLAC (Free Lossless Audio Codec)" )
-		if [ $FLAC_SUPPORT -eq 0 ]; then
+		if [ "${FLAC_SUPPORT}" -eq 0 ]; then
 			die "Abort: ffmpeg does not appear to support flac."
 		fi
 
@@ -385,6 +385,7 @@ EncodeAudio_OggVorbis() {
 # Increases audio volume by the integer amount. Default is 256 (maintain current)
 # Must be chained from CreateAudioPipe
 #
+# For FFmpeg:
 # Integer values > 256 will increase volume.
 # Integer values < 256 will decrease volume.
 #
@@ -585,7 +586,7 @@ QueryVideoSampleAspectRatio() {
 QueryVideoWidth() {
 	case "${QUERY_MEDIA_TOOL}" in
 		ffprobe)
-			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep width | cut -d '=' -f 2 )
+			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep width | head -n 1 | cut -d '=' -f 2 )
 			;;
 		midentify)
 			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_WIDTH | cut -d '=' -f 2)
