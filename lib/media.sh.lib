@@ -34,6 +34,7 @@
 # DestroyPipe
 # EncodeAudio_FlacFlac
 # EncodeAudio_MP4AAC
+# EncodeAudio_OggOpus
 # EncodeAudio_OggVorbis
 # GatherMediaInfo
 # IncreaseAudioVolume
@@ -311,6 +312,31 @@ EncodeAudio_MP4AAC() {
 		die "Abort: Failed to locate neroAacEnc, faac, or ffmpeg in your \$PATH." "2"
 	fi
 
+	DestroyPipe audio
+}
+
+# EncodeAudio_OggOpus(input file)
+# Converts input file to Opus and puts into an ogg container.
+# Requirements: ffmpeg, common.sh.lib
+
+# Relies on invoker to set following VARIABLES:
+# TEMP_DIR
+#
+# For audio files, the following must also be set:
+# FFMPEG_OPUS_AUDIO_QUALITY_STANDALONE
+
+EncodeAudio_OggOpus() {
+	if command -v ffmpeg > /dev/null; then
+
+		# OPUS SUPPORT TEST HERE
+
+		local AUDIO_QUALITY="${FFMPEG_OPUS_AUDIO_QUALITY_STANDALONE}"
+
+		CreateAudioPipe "${1}"
+		ffmpeg -i "$TEMP_DIR"/"${AUDIO_PIPE}" -acodec libopus -b:a "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.opus || die "ffmpeg failed." "2"
+	else
+		die "Abort: Failed to locate ffmpeg in your \$PATH." "2"
+	fi
 	DestroyPipe audio
 }
 
