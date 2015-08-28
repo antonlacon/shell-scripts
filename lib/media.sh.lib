@@ -116,7 +116,7 @@ CreateAudioPipe() {
 
 CreateVideoPipeResize() {
 	VIDEO_PIPE=$( tmp_random_name )
-	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
+	echo "CreateVideoPipeResize named pipe is: "${VIDEO_PIPE}
 
 	# Test for existence of videopipe already
 	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
@@ -127,12 +127,14 @@ CreateVideoPipeResize() {
 
 	if command -v mplayer > /dev/null; then
 	        # mplayer's vf filter chain scales video to device's display width and height regardless of aspect ratio
-	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf scale="${DEVICE_WIDTH}":"${DEVICE_HEIGHT}"  -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf scale="${DEVICE_WIDTH}":"${DEVICE_HEIGHT}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	elif command -v ffmpeg > /dev/null; then
+		ffmpeg -i "${1}" -filter:v scale="${DEVICE_WIDTH}":"${DEVICE_HEIGHT}" -sws_flags lanczos -f yuv4mpegpipe -an -sn -y "${TEMP_DIR}"/"${VIDEO_PIPE}" 2>/dev/null &
 	else
 		die "Abort: No supported video transcoder detected." "3"
 	fi
 
-	if [ $? -ne 0 ]; then
+	if [ "$?" -ne 0 ]; then
 		die "Abort: Failed to fill named pipe." "3"
 	fi
 }
@@ -149,7 +151,7 @@ CreateVideoPipeResize() {
 
 CreateVideoPipeResizePreserveAspect() {
 	VIDEO_PIPE=$( tmp_random_name )
-	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
+	echo "CreateVideoPipeResizePreserveAspect named pipe is: "${VIDEO_PIPE}
 
 	# Test for existence of videopipe already
 	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
@@ -158,9 +160,16 @@ CreateVideoPipeResizePreserveAspect() {
 	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE} || die "failed to create named pipe" "3"
 	fi
 
+### FFmpeg approach has audio sync issue when doing 16/9 to 4/3 (bars). No issues noticed 4/3 to 16/9 (letterbox). ###
+
 	if command -v mplayer > /dev/null; then
 	        # mplayer's vf filter chain resizes to DEVICE_ASPECT_RATIO of player while maintaining original aspect ratio of the video
 	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$DEVICE_WIDTH":"$DEVICE_HEIGHT",scale=0:0,expand="$DEVICE_WIDTH":"$DEVICE_HEIGHT",dsize="${DEVICE_ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	elif command -v ffmpeg > /dev/null; then
+		ffmpeg -i "${1}" \
+		-filter:v scale="iw*min("${DEVICE_WIDTH}"/iw\,"${DEVICE_HEIGHT}"/ih):ih*min("${DEVICE_WIDTH}"/iw\,"${DEVICE_HEIGHT}"/ih)",pad="${DEVICE_WIDTH}"":""${DEVICE_HEIGHT}"":(ow-iw)/2:(oh-ih)/2:black" -sws_flags lanczos -f yuv4mpegpipe \
+		-an -sn \
+		-y "${TEMP_DIR}"/"${VIDEO_PIPE}" 2>/dev/null &
 	else
 		die "Abort: No supported video transcoder detected." "3"
 	fi
@@ -179,7 +188,7 @@ CreateVideoPipeResizePreserveAspect() {
 
 CreateVideoPipeStraightThrough() {
 	VIDEO_PIPE=$( tmp_random_name )
-	echo "CreateVideoPipe named pipe is: "${VIDEO_PIPE}
+	echo "CreateVideoPipeStraightThrough named pipe is: "${VIDEO_PIPE}
 
 	# Test for existence of videopipe already
 	if [ -e "${TEMP_DIR}"/${VIDEO_PIPE} ]; then
@@ -189,7 +198,9 @@ CreateVideoPipeStraightThrough() {
 	fi
 
 	if command -v mplayer > /dev/null; then
-	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	        mplayer -really-quiet -nosub -nosound -benchmark -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	elif command -v ffmpeg > /dev/null; then
+		ffmpeg -i "${1}" -f yuv4mpegpipe -an -sn -y "${TEMP_DIR}"/"${VIDEO_PIPE}" 2>/dev/null &
 	else
 		die "Abort: No video transcoder detected." "3"
 	fi
@@ -508,7 +519,7 @@ QueryAudioCodec() {
 QueryVideoDisplayAspectRatio() {
 	case "${QUERY_MEDIA_TOOL}" in
 		ffprobe)
-			local VIDEO_DISPLAY_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep display_aspect_ratio | cut -d '=' -f 2 )
+			local VIDEO_DISPLAY_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep display_aspect_ratio | head -n 1 | cut -d '=' -f 2 )
 			;;
 		midentify)
 			local VIDEO_DISPLAY_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_ASPECT | cut -d '=' -f 2 )
@@ -538,7 +549,7 @@ QueryVideoDisplayAspectRatio() {
 QueryVideoFPS() {
 	case "${QUERY_MEDIA_TOOL}" in
 		ffprobe)
-			local VIDEO_FPS=$( echo "${MEDIA_INFO}" | grep r_frame_rate | cut -d '=' -f 2 )
+			local VIDEO_FPS=$( echo "${MEDIA_INFO}" | grep r_frame_rate | head -n 1 | cut -d '=' -f 2 )
 			;;
 		midentify)
 			local VIDEO_FPS=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_FPS | cut -d '=' -f 2 )
@@ -562,7 +573,7 @@ QueryVideoFPS() {
 QueryVideoHeight() {
 	case "${QUERY_MEDIA_TOOL}" in
 		ffprobe)
-			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep height | cut -d '=' -f 2 )
+			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep height | head -n 1 | cut -d '=' -f 2 )
 			;;
 		midentify)
 			local VIDEO_HEIGHT=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_HEIGHT | cut -d '=' -f 2 )
@@ -585,7 +596,7 @@ QueryVideoHeight() {
 QueryVideoSampleAspectRatio() {
 	case "${QUERY_MEDIA_TOOL}" in
 		ffprobe)
-			local VIDEO_SAMPLE_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep sample_aspect_ratio | cut -d '=' -f 2 )
+			local VIDEO_SAMPLE_ASPECT_RATIO=$( echo "${MEDIA_INFO}" | grep sample_aspect_ratio | head -n 1 | cut -d '=' -f 2 )
 			;;
 		*)
 			die "Abort: Unknown option passed to ""${0}""." "4"
@@ -605,7 +616,7 @@ QueryVideoWidth() {
 			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep width | head -n 1 | cut -d '=' -f 2 )
 			;;
 		midentify)
-			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_WIDTH | cut -d '=' -f 2)
+			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep ID_VIDEO_WIDTH | cut -d '=' -f 2 )
 			;;
 		ffmpeg)
 			local VIDEO_WIDTH=$( echo "${MEDIA_INFO}" | grep Stream | grep Video | cut -d ',' -f 3 | tr " " - | cut -d '-' -f 2 | cut -d 'x' -f 1 )
