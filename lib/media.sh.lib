@@ -49,9 +49,11 @@
 #
 # Known quirks / todo:
 # Using ffmpeg's hwaccel option for CreateVideoPipe* doesn't background; hangs somewhere. Check if issue with pipe or file?
-# Every query not using ffprobe probably won't work multiple streams
+# Confirm mplayer's hardware acceleration is working - mplayer config is for vo vdpau, this uses yuv4mpeg
+# Every query not using ffprobe probably won't work with multiple streams
 # 	Video queries should use first stream - 2nd stream is typically mjpeg
 # 	Audio queries don't know how to handle multiple streams
+#	Switch default stream to tbe the longest - does ffmpeg -show_stream have a stream select?
 # Teach CreateAudioPipe to handle dynamic channel amounts. Less of an issue - 2 channel for stereo pmp, and rips have audio copied.
 # Rename CreateVideoPipeStraightThrough to just CreateVideoPipe
 # Write DetectVideoCrop
