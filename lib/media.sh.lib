@@ -47,17 +47,17 @@
 # TestForAudio
 # TestForVideo
 #
-# Known quirks / todo:
+# Known quirks / To Do:
 # Using ffmpeg's hwaccel option for CreateVideoPipe* doesn't background; hangs somewhere. Check if issue with pipe or file?
 # Confirm mplayer's hardware acceleration is working - mplayer config is for vo vdpau, this uses yuv4mpeg
 # Every query not using ffprobe probably won't work with multiple streams
-# 	Video queries should use first stream - 2nd stream is typically mjpeg
-# 	Audio queries don't know how to handle multiple streams
-#	Switch default stream to tbe the longest - does ffmpeg -show_stream have a stream select?
+#	ffprobe forced to use first stream's information
+#	Video queries should use first stream - 2nd stream is typically mjpeg
+#	Audio queries don't know how to handle multiple streams - write QueryAudioStreamMap - meant for 5.1 -> 2.0, not this?
+#	Consider switching default stream to tbe the longest - does ffmpeg -show_stream have a stream select?
 # Teach CreateAudioPipe to handle dynamic channel amounts. Less of an issue - 2 channel for stereo pmp, and rips have audio copied.
 # Rename CreateVideoPipeStraightThrough to just CreateVideoPipe
 # Write DetectVideoCrop
-# Flesh out EncodeAudio_OggOpus
 
 # Functions:
 
@@ -361,15 +361,25 @@ EncodeAudio_MP4AAC() {
 # Relies on invoker to set following VARIABLES:
 # TEMP_DIR
 #
-# For audio files, the following must also be set:
+# For audio files, one of the following must also be set:
 # FFMPEG_OPUS_AUDIO_QUALITY_STANDALONE
+#
+# For video files, one of the following must also be set:
+# HAS_VIDEO
+# FFMPEG_OPUS_AUDIO_QUALITY_VIDEO
 
 EncodeAudio_OggOpus() {
 	if command -v ffmpeg > /dev/null; then
-
-		# OPUS SUPPORT TEST HERE
-
-		local AUDIO_QUALITY="${FFMPEG_OPUS_AUDIO_QUALITY_STANDALONE}"
+		local OPUS_SUPPORT=$( ffmpeg -codecs | grep -c "encoders: libopus" )
+		if [ "${OPUS_SUPPORT}" -ge 1 ]; then
+			if [ -n "${HAS_VIDEO}" ] && [ "${HAS_VIDEO}" -ge 1 ]; then
+				local AUDIO_QUALITY="${FFMPEG_OPUS_AUDIO_QUALITY_VIDEO}"
+			else
+				local AUDIO_QUALITY="${FFMPEG_OPUS_AUDIO_QUALITY_STANDALONE}"
+			fi
+		else
+			die "Abort: ffmpeg does not have support for libopus?" "2"
+		fi
 
 		CreateAudioPipe "${1}"
 		ffmpeg -i "$TEMP_DIR"/"${AUDIO_PIPE}" -acodec libopus -b:a "${AUDIO_QUALITY}" "${TEMP_DIR}"/audio.opus || die "ffmpeg failed." "2"
@@ -542,7 +552,7 @@ QueryVideoDisplayAspectRatio() {
 			elif [ "${VIDEO_DISPLAY_ASPECT_RATIO}" -eq 1.3333 ]; then
 				local VIDEO_DISPLAY_ASPECT_RATIO="4/3"
 			else
-				echo "NOTICE: You have a video with an odd aspect resolution. Is it genuine? Email me to include it."
+				echo "NOTICE: You have a video with an odd aspect resolution. Is it genuine? Email the author to include it."
 			fi
 			;;
 		ffmpeg)
