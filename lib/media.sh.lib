@@ -58,6 +58,7 @@
 # Teach CreateAudioPipe to handle dynamic channel amounts. Less of an issue - 2 channel for stereo pmp, and rips have audio copied.
 # Rename CreateVideoPipeStraightThrough to just CreateVideoPipe
 # Write DetectVideoCrop
+# Write QueryVideoCodec
 
 # Functions:
 
@@ -521,7 +522,7 @@ QueryAudioChannels() {
 QueryAudioCodec() {
 	case "${QUERY_MEDIA_TOOL}" in
 		ffprobe|ffmpeg)
-			local AUDIO_CODEC=$( echo "${MEDIA_INFO}" | grep Stream | grep Audio | cut -d ' ' -f 8 )
+			local AUDIO_CODEC=$( echo "${MEDIA_INFO}" | sed -e '/Stream/!d' -e '/Audio/!d' | cut -d ' ' -f 8 )
 			;;
 		midentify)
 			local AUDIO_CODEC=$( echo "${MEDIA_INFO}" | grep "ID_AUDIO_CODEC" | cut -d '=' -f 2 | tr -d 'ff' )
