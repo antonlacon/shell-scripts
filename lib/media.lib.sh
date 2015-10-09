@@ -37,7 +37,6 @@
 # EncodeAudio_OggOpus
 # EncodeAudio_OggVorbis
 # GatherMediaInfo
-# IncreaseAudioVolume #Probably Broken
 # QueryAudioCodec
 # QueryVideoDisplayAspectRatio
 # QueryVideoFPS
@@ -77,7 +76,7 @@ ClearMediaInfo() {
 
 CopyAudio() {
 	if command -v ffmpeg > /dev/null; then
-		ffmpeg -i "${1}" -vn -acodec copy "${2}" || die "Abort: ffmpeg failed in CopyAudio." "2"
+		ffmpeg -i "${1}" -vn -acodec copy -sn "${2}" || die "Abort: ffmpeg failed in CopyAudio." "2"
 	else
 		die "Abort: No known programs found to copy an audio stream." "2"
 	fi
@@ -430,41 +429,6 @@ EncodeAudio_OggVorbis() {
 		die "Abort: Failed to locate oggenc or ffmpeg in your \$PATH." "2"
 	fi
 	DestroyPipe audio
-}
-
-# IncreaseAudioVolume (integer amount)
-# Increases audio volume by the integer amount. Default is 256 (maintain current)
-# Must be chained from CreateAudioPipe
-#
-# For FFmpeg:
-# Integer values > 256 will increase volume.
-# Integer values < 256 will decrease volume.
-#
-# Requires:
-# TEMP_DIR
-
-# Creates an audio pipe without destroy it on failure. Needs restructuring.
-IncreaseAudioVolume() {
-	local MEDIA_PIPE="${TEMP_DIR}"/"${AUDIO_PIPE}"
-	local LOUDER_AUDIO_PIPE=$( tmp_random_name )
-	echo "IncreaseAudioVolume Pipe is: "$AUDIO_PIPE
-
-	# Test for existence of audiopipe already
-	if [ -e "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" ]; then
-		die "Abort: Named pipe file already exists." "2"
-	else
-		mkfifo "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed to create named pipe" "2"
-	fi
-
-	if command -v ffmpeg > /dev/null; then
-		ffmpeg -i "${MEDIA_PIPE}" -acodec pcm_s16le -vol "${1}" -f wav -y "${TEMP_DIR}"/"${LOUDER_AUDIO_PIPE}" || die "failed while increasing volume" "2"
-
-		DestroyPipe audio
-		AUDIO_PIPE="${LOUDER_AUDIO_PIPE}"
-		echo "New named audio pipe is: "$AUDIO_PIPE
-	else
-		die "Abort: Could not locate ffmpeg in \$PATH" "2"
-	fi
 }
 
 # GatherMediaInfo
