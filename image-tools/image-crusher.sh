@@ -29,7 +29,7 @@
 # User Configuration Options:
 mozjpeg_cjpeg_utility="${HOME}""/Downloads/mozjpeg/cjpeg"
 mozjpeg_jpegtran_utility="${HOME}""/Downloads/mozjpeg/jpegtran"
-#compression_quality="95"
+#jpeg_compression_quality="99"
 
 # die (message, exit code) - echo and abort message; use the provided exit code
 die() {
@@ -81,5 +81,7 @@ elif [[ "$file_header" == "BMP" ]]; then
 	convert "${file}" "${output_file%.*}".png || die "Abort: Couldn't convert bmp to png."
 else
 	cp "${file}" "${output_file}" || die "Abort: Failed to copy file."
-#	convert "${file}" TGA:- | "$mozjpeg_cjpeg_utility" -quality "$compression_quality" -optimize -targa -outfile "$output_file" || die "Abort: jpeg creation failed."
+#	convert "${file}" TGA:- | "$mozjpeg_cjpeg_utility" -quality "$jpeg_compression_quality" -optimize -targa -outfile "$output_file" || die "Abort: jpeg creation failed."
 fi
+
+exit 0
