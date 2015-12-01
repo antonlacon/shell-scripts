@@ -58,6 +58,7 @@
 # Rename CreateVideoPipeStraightThrough to just CreateVideoPipe
 # Write DetectVideoCrop
 # Write QueryVideoCodec
+# Add audio channel support to EncodeAudio_MP4AAC
 
 # Functions:
 
@@ -139,10 +140,10 @@ CreateVideoPipeResize() {
 	        mkfifo "${TEMP_DIR}"/${VIDEO_PIPE} || die "failed to create named pipe" "3"
 	fi
 
-	if command -v mplayer > /dev/null; then
+#	if command -v mplayer > /dev/null; then
 	        # mplayer's vf filter chain scales video to device's display width and height regardless of aspect ratio
-	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf scale="${DEVICE_WIDTH}":"${DEVICE_HEIGHT}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
-	elif command -v ffmpeg > /dev/null; then
+#	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf scale="${DEVICE_WIDTH}":"${DEVICE_HEIGHT}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	if command -v ffmpeg > /dev/null; then
 		ffmpeg -i "${1}" -filter:v scale="${DEVICE_WIDTH}":"${DEVICE_HEIGHT}" -sws_flags lanczos -f yuv4mpegpipe -an -sn -y "${TEMP_DIR}"/"${VIDEO_PIPE}" 2>/dev/null &
 	else
 		die "Abort: No supported video transcoder detected." "3"
@@ -176,10 +177,10 @@ CreateVideoPipeResizePreserveAspect() {
 
 ### FFmpeg approach has audio sync issue when doing 16/9 to 4/3 (bars). No issues noticed 4/3 to 16/9 (letterbox). ###
 
-	if command -v mplayer > /dev/null; then
+#	if command -v mplayer > /dev/null; then
 	        # mplayer's vf filter chain resizes to DEVICE_ASPECT_RATIO of player while maintaining original aspect ratio of the video
-	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$DEVICE_WIDTH":"$DEVICE_HEIGHT",scale=0:0,expand="$DEVICE_WIDTH":"$DEVICE_HEIGHT",dsize="${DEVICE_ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
-	elif command -v ffmpeg > /dev/null; then
+#	        mplayer -really-quiet -nosub -nosound -benchmark -sws 9 -vf dsize="$DEVICE_WIDTH":"$DEVICE_HEIGHT",scale=0:0,expand="$DEVICE_WIDTH":"$DEVICE_HEIGHT",dsize="${DEVICE_ASPECT_RATIO}" -vo yuv4mpeg:file="${TEMP_DIR}"/${VIDEO_PIPE} "${1}" &
+	if command -v ffmpeg > /dev/null; then
 		ffmpeg -i "${1}" \
 		-filter:v scale="iw*min("${DEVICE_WIDTH}"/iw\,"${DEVICE_HEIGHT}"/ih):ih*min("${DEVICE_WIDTH}"/iw\,"${DEVICE_HEIGHT}"/ih)",pad="${DEVICE_WIDTH}"":""${DEVICE_HEIGHT}"":(ow-iw)/2:(oh-ih)/2:black" -sws_flags lanczos -f yuv4mpegpipe \
 		-an -sn \
@@ -227,7 +228,7 @@ CreateVideoPipeStraightThrough() {
 # DetectVideoCrop
 # Sample 5% of video frames to estimate crop settings. Utilizes 99% confidence interval of final result.
 
-# DestroyPipe(argument) 
+# DestroyPipe(argument)
 # Delete named pipes created by CreateAudipPipe or CreateVideoPipe*
 #
 # Relies on invoker to set the following VARIABLES:
@@ -300,7 +301,8 @@ EncodeAudio_FlacFlac() {
 EncodeAudio_MP4AAC() {
 	# Test for audio encoders and set quality variable accordingly
 	# Priority Order (descending): libfdk_aac, neroAacEnc, faac, ffmpeg
-	# Build a named pipe and fill it with uncompressed WAV. Have the audio encoder read from the pipe
+	# Build a named pipe and fill it with uncompressed WAV audio.
+	# Have the audio encoder read from the pipe
 
 	if command -v ffmpeg; then
 		local AAC_SUPPORT=$( ffmpeg -codecs | grep -c "libfdk_aac" )
@@ -528,6 +530,15 @@ QueryVideoDisplayAspectRatio() {
 			;;
 		esac
 		echo "${VIDEO_DISPLAY_ASPECT_RATIO}"
+}
+
+# QueryVideoDuration (input file)
+# Query a video file to determine it's duration. Return format in HH:MM:SS.Microseconds. Drop -sexagesimal to be just seconds.
+
+QueryVideoDuration() {
+	local VIDEO_DURATION=$( ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal "${1}" )
+
+	echo "${VIDEO_DURATION}"
 }
 
 # QueryVideoFPS
