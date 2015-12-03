@@ -32,7 +32,9 @@ broadcaster_channel=$( xclip -o )
 
 # Check if clipboard contents resemble a twitch url and then try to obtain the stream's url
 if [[ "$broadcaster_channel" == "http://"*"twitch.tv/"* ]]; then
-	stream_url=$( youtube-dl -q -f "$stream_quality" --get-url "$broadcaster_channel" ) || die "youtube-dl failed"
+	stream_url=$( youtube-dl -q -f "$stream_quality" --get-url "$broadcaster_channel" ) || \
+	stream_url=$( youtube-dl -q -f "Source" --get-url "$broadcaster_channel" ) || \
+	die "youtube-dl failed"
 else
 	die "bad clipboard content"
 fi
