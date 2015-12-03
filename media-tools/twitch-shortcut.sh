@@ -24,11 +24,7 @@ stream_quality="Medium"
 # Function to exit gracefully when something goes amiss
 die() {
 	echo "$1"
-	if [ -n "$2" ]; then
-		exit "$2"
-	else
-		exit 1
-	fi
+	exit 1
 }
 
 # Getting contents of the clipboard
